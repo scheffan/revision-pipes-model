@@ -1,0 +1,28 @@
+# Entornos y caché de Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Datos: nunca se suben (licencias y tamaño). Ver data/README.md
+data/*
+!data/README.md
+
+# Modelos entrenados (se publican aparte)
+models/*
+!models/README.md
+
+# Claves y configuración local
+.env
+.streamlit/secrets.toml
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
