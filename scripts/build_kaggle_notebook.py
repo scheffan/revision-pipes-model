@@ -64,7 +64,7 @@ open("revision_pipes/__init__.py", "w").close()
 """),
     *[module_cell(name) for name in MODULES],
     code("""
-import json, zipfile
+import json, shutil, zipfile
 from collections import Counter
 from pathlib import Path
 
@@ -110,14 +110,29 @@ def audit(folder: Path) -> Counter:
     return found
 """),
     code("""
-# SWRD: radiografías de soldaduras de costura (Google Drive oficial de los autores)
+# SWRD: radiografías de soldaduras de costura.
+# Opción A (recomendada): subir SWXD_Data.zip a Kaggle como dataset privado y agregarlo al
+#   notebook (Add Input). Kaggle lo monta en /kaggle/input/<nombre>/.
+# Opción B: bajarlo del Google Drive oficial. Google limita las descargas de archivos muy
+#   pedidos ("Too many users..."): si pasa, usar la opción A o reintentar al día siguiente.
 SWRD_DIR = DATA / "swrd"
 SWRD_DIR.mkdir(exist_ok=True)
-!gdown --folder "https://drive.google.com/drive/folders/1LNUt101wufTBJpRAgrZAU1h-Tfx629wO" -O {SWRD_DIR}
+local_zips = [z for z in Path("/kaggle/input").rglob("*.zip") if "SW" in z.name.upper()]
+local_dirs = [d for d in Path("/kaggle/input").glob("*") if "swrd" in d.name.lower()]
+if local_zips:
+    print("Usando el zip subido a Kaggle:", local_zips[0])
+    safe_extract(local_zips[0], SWRD_DIR)
+elif local_dirs:
+    print("Usando la carpeta subida a Kaggle:", local_dirs[0])
+    shutil.copytree(local_dirs[0], SWRD_DIR, dirs_exist_ok=True)
+else:
+    !gdown --folder "https://drive.google.com/drive/folders/1LNUt101wufTBJpRAgrZAU1h-Tfx629wO" -O {SWRD_DIR}
 for z in SWRD_DIR.rglob("*.zip"):
     print("Extrayendo", z.name, f"({z.stat().st_size / 1e6:.0f} MB)")
     safe_extract(z, SWRD_DIR)
     z.unlink()
+if not any(SWRD_DIR.rglob("*.*")):
+    print("⚠️ No se pudo obtener SWRD. Seguimos con las fotos de cordones; ver opción A arriba.")
 audit(SWRD_DIR);
 """),
     code("""
@@ -256,11 +271,12 @@ def class_counts(items):
 
 swrd_counts = class_counts(swrd.values())
 cord_counts = class_counts(b for _, b in cordones.values())
-fig, axes = plt.subplots(1, 2, figsize=(12, 4))
-for ax, counts, title in [
-    (axes[0], swrd_counts, "Radiografías SWRD: defectos por tipo"),
-    (axes[1], cord_counts, "Fotos de cordones: recuadros por clase"),
-]:
+panels = [(c, t) for c, t in [
+    (swrd_counts, "Radiografías SWRD: defectos por tipo"),
+    (cord_counts, "Fotos de cordones: recuadros por clase"),
+] if c]
+fig, axes = plt.subplots(1, len(panels), figsize=(6 * len(panels), 4), squeeze=False)
+for ax, (counts, title) in zip(axes[0], panels):
     if counts:
         labels, values = zip(*counts.most_common())
         ax.barh(labels, values, color="#2563eb")

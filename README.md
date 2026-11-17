@@ -9,7 +9,7 @@ Herramienta para que un inspector de soldaduras de ductos revise y apruebe radio
 | Etapa | Qué incluye | Estado |
 |---|---|---|
 | 0. Base | Estructura, preprocesamiento, tests, CI | ✅ |
-| 1. Datos | Descarga segura, duplicados, análisis exploratorio, split sin fuga | 🟡 primera corrida en Kaggle OK |
+| 1. Datos | Descarga segura, duplicados, análisis exploratorio, split sin fuga | 🟡 cordones listo (4.621 imágenes → 993 fotos distintas); falta SWRD |
 | 2. Modelo | Detector RT-DETR (Apache 2.0), métricas, umbral orientado a recall | ⏳ |
 | 3. Visualización | Recuadros rojos (defecto), ámbar (cordón malo) y verdes (bien), con conteo | 🟡 módulo de dibujo listo |
 | 4. App | Lote → priorización → revisión → decisión → informe PDF → auditoría | ⏳ |
