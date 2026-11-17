@@ -8,8 +8,8 @@ Registro de cada etapa con capturas. Es la base para el README público, la tarj
 |---|---|---|
 | 0 | Tests pasando en la PC local | README, LinkedIn ✅ |
 | 0 | CI en verde en GitHub | README |
-| 1 | Ejemplos de cada dataset con sus recuadros | README, portfolio 🟡 cordones listo, falta SWRD |
-| 1 | Gráfico de cantidad de imágenes por clase | README, LinkedIn 🟡 cordones listo |
+| 1 | Ejemplos de cada dataset con sus recuadros | README, portfolio ✅ |
+| 1 | Gráfico de cantidad de imágenes por clase | README, LinkedIn ✅ |
 | 2 | Curvas de entrenamiento y matriz de confusión | README |
 | 3 | Radiografía con defectos marcados en rojo y zonas sanas en verde | Portada del portfolio y LinkedIn |
 | 4 | App: lote ordenado por prioridad, revisión, informe PDF | Portfolio, LinkedIn |
@@ -48,12 +48,32 @@ El dataset grande infla su tamaño con copias espejadas y rotadas, y los dos dat
 
 Nota: el umbral de parecido es estricto a propósito. Puede juntar algunas fotos distintas pero muy similares, lo que hace la separación más conservadora, nunca más optimista.
 
-![Recuadros por clase](capturas/etapa1-cordones-clases.png)
-
 Recuadros totales: 13.670 (Good Weld 5.485, Defect 4.928, Bad Weld 3.257), incluidas las copias aumentadas.
 
 ![Ejemplos con recuadros: rojo = defecto, ámbar = cordón malo, verde = cordón bueno](capturas/etapa1-cordones-recuadros.png)
 
 *Imágenes: datasets "Welding_Defects" (Roboflow Universe, CC BY 4.0) y "welding defects detection" (Roboflow Universe, dominio público).*
 
-**Pendiente:** las radiografías SWRD no se pudieron bajar porque Google Drive limita las descargas de archivos muy pedidos. Solución: subir el zip a Kaggle como dataset privado; el notebook ya lo detecta solo.
+**SWRD descartado por ahora:** el zip pesa 116 GB y no tiene licencia publicada. Se reemplazó por dos datasets de radiografías de Roboflow con licencia CC BY 4.0.
+
+### Segunda corrida (17-nov-2026): radiografías
+
+| Dataset | Imágenes | Licencia |
+|---|---|---|
+| "weld" (Roboflow, versión 1 sin aumentaciones) | 2.184 | CC BY 4.0 |
+| "weld data" (Roboflow) | 558 | CC BY 4.0 |
+| **Total** | **2.742 → 2.699 radiografías distintas** | |
+
+**Nombres unificados:** cada dataset nombraba los defectos distinto ("Lack Of Penetration" / "incomplete penetration", y hasta "Tungsten Inclusion" y "tungsten inclusion" como clases separadas). Un módulo con tests los lleva a 11 clases comunes en español.
+
+![Defectos por tipo y recuadros por clase](capturas/etapa1-clases.png)
+
+**Desbalance:** cinco defectos (porosidad, fisura, inclusión de escoria, falta de penetración y falta de fusión) concentran el 98% de los 7.856 recuadros. Las clases con menos de 100 ejemplos no alcanzan para entrenar bien; en la Etapa 2 se agrupan como "otro defecto".
+
+**Separación:** 1.926 radiografías para entrenamiento, 408 para validación y 408 para prueba, sin fuga.
+
+![Radiografías con defectos marcados](capturas/etapa1-radiografias-recuadros.png)
+
+*Imágenes: datasets "weld" (kunkun) y "weld data" (Vayun Goel), Roboflow Universe, CC BY 4.0.*
+
+**Etapa 1 terminada.**
