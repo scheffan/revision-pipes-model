@@ -80,7 +80,7 @@ Recuadros totales: 13.670 (Good Weld 5.485, Defect 4.928, Bad Weld 3.257), inclu
 
 ---
 
-## Etapa 2 · Modelo (en curso, 17-nov-2026)
+## Etapa 2 · Modelo (17-nov-2026)
 
 **Decisiones:**
 - Detector **RT-DETR R18** (Apache 2.0) preentrenado, ajustado a soldaduras. No YOLO de Ultralytics: su licencia AGPL obligaría a publicar el código de la app.
@@ -90,3 +90,33 @@ Recuadros totales: 13.670 (Good Weld 5.485, Defect 4.928, Bad Weld 3.257), inclu
 - Exportación a **ONNX** para que la app corra sin placa de video, verificada contra PyTorch con una radiografía real.
 
 **Antes de gastar GPU:** el notebook completo se probó en la nube con un modelo chico y datos simulados (entrenamiento, evaluación, gráficos y exportación). Esa prueba encontró un detalle: con un modelo sin entrenar, todas las posiciones empatan en puntaje y ONNX y PyTorch desempatan distinto. Por eso la verificación final usa una imagen real y compara los hallazgos, no los números crudos.
+
+### Primera corrida: radiografías (Kaggle, GPU T4, 2,1 h)
+
+**Entrenamiento:** el mAP@50 en validación subió rápido (0,31 → 0,59 en 9 épocas) y llegó a su mejor valor, **0,626**, en la época 13. Después se estancó entre 0,60 y 0,62: con estos datos, el modelo ya aprendió lo principal. Se usa la época 13.
+
+**Resultados en prueba (408 radiografías que el modelo nunca vio):**
+
+| Métrica | Valor |
+|---|---|
+| mAP@50 | **0,607** (referencia publicada en SWRD: 0,66) |
+| mAP@50-95 | 0,288 |
+| Placas con defecto marcadas (recall por placa) | **90,4%** (369 de 408) |
+| Umbral de confianza (elegido en validación) | 0,55 |
+
+| Defecto | Recall | Precisión |
+|---|---|---|
+| Falta de penetración | 81% | 85% |
+| Porosidad | 75% | 77% |
+| Fisura | 69% | 84% |
+| Inclusión de escoria | 64% | 78% |
+| Falta de fusión | 45% | 62% |
+| Otro defecto | 5% | 25% |
+
+**Lectura honesta:**
+- El umbral se eligió en validación para marcar el 95% de las placas con defectos, pero en prueba marcó el 90%. La calibración no se trasladó del todo: hace falta un margen de seguridad (elegir el umbral apuntando más alto en validación).
+- "Otro defecto" casi no se detecta: tenía solo 120 ejemplos de entrenamiento repartidos en seis tipos distintos. Falta de fusión también es débil.
+- **Limitación importante:** todas las radiografías del dataset tienen defectos, así que no se pudo medir cuántas falsas alarmas daría en placas sanas.
+- La exportación a ONNX (81 MB) da exactamente los mismos hallazgos que PyTorch.
+
+Las métricas quedan en `docs/metricas/radiografias.json` y un test del CI falla si un modelo nuevo rinde por debajo de un piso acordado.

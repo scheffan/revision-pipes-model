@@ -10,7 +10,7 @@ Herramienta para que un inspector de soldaduras de ductos revise y apruebe radio
 |---|---|---|
 | 0. Base | Estructura, preprocesamiento, tests, CI | ✅ |
 | 1. Datos | Descarga segura, duplicados, nombres unificados, split sin fuga | ✅ 2.699 radiografías y 993 fotos de cordones distintas |
-| 2. Modelo | Detector RT-DETR (Apache 2.0), métricas, umbral orientado a recall | ⏳ |
+| 2. Modelo | Detector RT-DETR (Apache 2.0), métricas, umbral orientado a recall | 🟡 radiografías: mAP@50 0,607 en prueba, 90% de placas con defecto marcadas |
 | 3. Visualización | Recuadros rojos (defecto), ámbar (cordón malo) y verdes (bien), con conteo | 🟡 módulo de dibujo listo |
 | 4. App | Lote → priorización → revisión → decisión → informe PDF → auditoría | ⏳ |
 | 5. QA | Historias de usuario, casos de prueba, tests e2e | 🟡 historias listas |
