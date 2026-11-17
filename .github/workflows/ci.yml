@@ -22,5 +22,8 @@ jobs:
       - name: Estilo (ruff)
         run: ruff check .
 
+      - name: Notebook de Kaggle al día
+        run: python scripts/build_kaggle_notebook.py --check
+
       - name: Tests (pytest)
         run: pytest
