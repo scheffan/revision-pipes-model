@@ -10,7 +10,7 @@ Registro de cada etapa con capturas. Es la base para el README público, la tarj
 | 0 | CI en verde en GitHub | README |
 | 1 | Ejemplos de cada dataset con sus recuadros | README, portfolio ✅ |
 | 1 | Gráfico de cantidad de imágenes por clase | README, LinkedIn ✅ |
-| 2 | Curvas de entrenamiento y matriz de confusión | README |
+| 2 | Curvas de entrenamiento, experto vs. modelo, dónde falla | README ✅ |
 | 3 | Radiografía con defectos marcados en rojo y zonas sanas en verde | Portada del portfolio y LinkedIn |
 | 4 | App: lote ordenado por prioridad, revisión, informe PDF | Portfolio, LinkedIn |
 | 5 | Tests e2e pasando | README |
@@ -120,3 +120,16 @@ Recuadros totales: 13.670 (Good Weld 5.485, Defect 4.928, Bad Weld 3.257), inclu
 - La exportación a ONNX (81 MB) da exactamente los mismos hallazgos que PyTorch.
 
 Las métricas quedan en `docs/metricas/radiografias.json` y un test del CI falla si un modelo nuevo rinde por debajo de un piso acordado.
+
+![Curvas de entrenamiento](capturas/etapa2-curvas-radiografias.png)
+
+![Experto vs. modelo en el conjunto de prueba](capturas/etapa2-predicciones-radiografias.png)
+
+**Dónde falla (lo más valioso de la corrida):**
+
+![Placas con defecto que el modelo no marcó](capturas/etapa2-donde-falla-radiografias.png)
+
+1. **Placas completas muy alargadas.** Las radiografías que se escapan son placas enteras (unas 5 veces más anchas que altas, con números y marcas de identificación) con defectos diminutos. Al achicarlas a 640×640 para el modelo, el defecto queda de uno o dos píxeles y desaparece. Solución: **recortar la placa en ventanas cuadradas superpuestas** (*tiling*) para entrenar y para detectar, y después unir los resultados.
+2. **Soldaduras verticales.** Una falta de penetración vertical se confundió con porosidad: casi todas las soldaduras de entrenamiento son horizontales. Solución: sumar rotaciones de 90° a las variaciones de entrenamiento.
+
+Estas dos mejoras atacan la causa de los errores, que es mejor que solo probar un modelo más grande.
