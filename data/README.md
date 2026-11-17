@@ -4,8 +4,10 @@ Esta carpeta no se sube a GitHub (está en `.gitignore`), salvo este archivo.
 
 | Dataset | Para qué se usa | Cómo se obtiene |
 |---|---|---|
-| RIAWELC | Entrenamiento y validación del clasificador (fisura, poro, falta de penetración, sin defecto) | Script de descarga (Etapa 1) |
-| GDXray, serie Welds | Prueba de generalización con placas completas de otra fuente | Descarga manual desde el sitio oficial (Etapa 1) |
+| Radiografías "weld" y "weld data" (Roboflow) | Detección de defectos en radiografías | Notebook de Kaggle (`notebooks/`) |
+| Fotos de cordones (Roboflow) | Cordón bueno / malo / defecto en fotos | Notebook de Kaggle |
+| GDXray (Welds) | Evaluación con otra fuente | Descarga manual (más adelante) |
+| SWRD | En pausa: 116 GB y sin licencia publicada | — |
 
 Por qué no se suben:
 - **Licencias:** GDXray permite uso solo de investigación y educativo, y prohíbe redistribuirlo. Ver `docs/licencias-datos.md`.
