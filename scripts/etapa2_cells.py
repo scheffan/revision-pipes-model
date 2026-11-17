@@ -23,13 +23,16 @@ CONFIG = """
 import os
 
 MODULO = "radiografias"      # "radiografias" o "cordones"
-EPOCHS = 40
+EPOCHS = 25                   # el primer modelo llegó a su mejor valor en la época 13
 IMG_SIZE = 640
 BATCH = 8
 LR = 1e-4                     # cabeza del detector
 LR_BACKBONE = 1e-5            # el backbone preentrenado se ajusta más suave
 SEED = 42                     # la misma de la Etapa 1: mismos conjuntos
-TARGET_RECALL = 0.95          # placas con defecto que no se pueden escapar
+TARGET_RECALL = 0.97          # en validación se apunta más alto: margen para que en prueba quede ≥ 95 %
+OVERLAP = 0.25                # superposición de las ventanas en placas alargadas
+MIN_RATIO = 1.5               # desde qué proporción (largo / corto) se corta en ventanas
+VERSION = "v2-ventanas"
 TIME_LIMIT_H = 3.0            # corte de seguridad para no agotar la cuota de GPU
 MODEL_ID = "PekingU/rtdetr_r18vd_coco_o365"
 DRY_RUN = os.environ.get("DRY_RUN") == "1"  # prueba rápida con un modelo chico, sin GPU
@@ -58,6 +61,7 @@ from revision_pipes.annotations import Box, clean, from_coco
 from revision_pipes.inference import decode
 from revision_pipes.metrics import choose_threshold, image_recall, per_class
 from revision_pipes.splits import split_by_group
+from revision_pipes.tiling import boxes_in_window, merge, to_plate, windows
 from revision_pipes.taxonomy import (
     TRAINING_CLASSES_CORDONES, TRAINING_CLASSES_RX, normalize_label, to_training_class,
 )
@@ -150,31 +154,50 @@ splits = split_by_group(sorted(items), lambda p: groups[p], seed=SEED)
 for split, paths in splits.items():
     counts = Counter(b.label for p in paths for b in items[p])
     print(f"{split:5s}: {len(paths)} imágenes · {dict(counts.most_common())}")
+
+# Placas alargadas → ventanas cuadradas superpuestas. Todas las ventanas de una placa quedan
+# en el mismo conjunto que la placa (sin fuga).
+sizes = {}
+for p in items:
+    with Image.open(p) as im:
+        sizes[p] = im.size
+plate_windows = {p: windows(*sizes[p], overlap=OVERLAP, min_ratio=MIN_RATIO) for p in items}
+samples = {
+    split: [(p, w, boxes_in_window(items[p], w)) for p in paths for w in plate_windows[p]]
+    for split, paths in splits.items()
+}
+for split, ss in samples.items():
+    healthy = sum(1 for _, _, b in ss if not b)
+    print(f"{split:5s}: {len(ss)} ventanas de entrenamiento · {healthy} sin defectos (zonas sanas)")
 """
 
 DATASET = """
 def augment(image: Image.Image, boxes: list) -> tuple:
-    \"\"\"Variaciones suaves: espejado horizontal, brillo y contraste. Solo en entrenamiento.\"\"\"
+    \"\"\"Variaciones suaves: espejado, rotación de 90°, brillo y contraste. Solo en entrenamiento.\"\"\"
     if random.random() < 0.5:
         w = image.width
         image = image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
         boxes = [Box(w - b.x_max, b.y_min, w - b.x_min, b.y_max, b.label) for b in boxes]
+    if random.random() < 0.3:
+        # Rotación de 90° (antihoraria) para aprender soldaduras verticales: (x, y) → (y, W - x)
+        w = image.width
+        image = image.transpose(Image.Transpose.ROTATE_90)
+        boxes = [Box(b.y_min, w - b.x_max, b.y_max, w - b.x_min, b.label) for b in boxes]
     image = ImageEnhance.Brightness(image).enhance(random.uniform(0.8, 1.2))
     image = ImageEnhance.Contrast(image).enhance(random.uniform(0.8, 1.2))
     return image, boxes
 
 
 class DetectionDataset(torch.utils.data.Dataset):
-    def __init__(self, paths: list, train: bool):
-        self.paths, self.train = paths, train
+    def __init__(self, samples: list, train: bool):
+        self.samples, self.train = samples, train
 
     def __len__(self):
-        return len(self.paths)
+        return len(self.samples)
 
     def __getitem__(self, i):
-        path = self.paths[i]
-        image = Image.open(path).convert("RGB")
-        boxes = items[path]
+        path, window, boxes = self.samples[i]
+        image = Image.open(path).convert("RGB").crop(window)
         if self.train:
             image, boxes = augment(image, boxes)
         w, h = image.size
@@ -196,10 +219,10 @@ def collate(batch):
 
 loaders = {
     split: torch.utils.data.DataLoader(
-        DetectionDataset(paths, train=(split == "train")), batch_size=BATCH,
+        DetectionDataset(ss, train=(split == "train")), batch_size=BATCH,
         shuffle=(split == "train"), num_workers=2, collate_fn=collate,
     )
-    for split, paths in splits.items()
+    for split, ss in samples.items()
 }
 """
 
@@ -234,22 +257,33 @@ print(f"Parámetros: {sum(p.numel() for p in model.parameters()) / 1e6:.1f} M")
 
 PREDICT = """
 @torch.no_grad()
-def predict(split: str, threshold: float = 0.01) -> list:
-    \"\"\"Recuadros predichos (en píxeles de la imagen original) para cada imagen del conjunto.\"\"\"
+def predict(split: str, threshold: float = 0.01, per_window: bool = False):
+    \"\"\"Recuadros predichos por placa (en píxeles de la placa), detectando ventana por ventana
+    y uniendo duplicados. Con per_window=True devuelve además lo hallado en cada ventana.\"\"\"
     model.eval()
-    results, paths = [], splits[split]
-    for start in range(0, len(paths), BATCH):
-        batch_paths = paths[start:start + BATCH]
-        images = [Image.open(p).convert("RGB") for p in batch_paths]
+    jobs = [(p, w) for p in splits[split] for w in plate_windows[p]]
+    found_by_job = []
+    for start in range(0, len(jobs), BATCH):
+        batch = jobs[start:start + BATCH]
+        crops = []
+        for p, w in batch:
+            with Image.open(p) as im:
+                crops.append(im.convert("RGB").crop(w))
         pixels = torch.stack([
-            torch.from_numpy(np.asarray(im.resize((IMG_SIZE, IMG_SIZE)), dtype=np.float32) / 255.0)
-            .permute(2, 0, 1) for im in images
+            torch.from_numpy(np.asarray(c.resize((IMG_SIZE, IMG_SIZE)), dtype=np.float32) / 255.0)
+            .permute(2, 0, 1) for c in crops
         ]).to(DEVICE)
         out = model(pixel_values=pixels)
-        for k, im in enumerate(images):
-            results.append(decode(out.logits[k].float().cpu().numpy(), out.pred_boxes[k].float().cpu().numpy(),
-                                  im.size, LABELS, threshold))
-    return results
+        for k, c in enumerate(crops):
+            found_by_job.append(decode(out.logits[k].float().cpu().numpy(), out.pred_boxes[k].float().cpu().numpy(),
+                                       c.size, LABELS, threshold))
+    by_plate = {p: [] for p in splits[split]}
+    for (p, w), found in zip(jobs, found_by_job):
+        by_plate[p] += to_plate(found, w)
+    plates = [merge(by_plate[p]) for p in splits[split]]
+    if per_window:
+        return plates, list(zip(jobs, found_by_job))
+    return plates
 
 
 def map50(split: str, preds: list) -> dict:
@@ -319,17 +353,26 @@ threshold = choose_threshold(val_preds, val_truths, target_recall=TARGET_RECALL)
 print(f"Umbral elegido en validación: {threshold} (recall por placa ≥ {TARGET_RECALL:.0%})")
 
 # 2) Evaluación final en PRUEBA
-test_preds = predict("test")
+test_preds, test_windows = predict("test", per_window=True)
 test_truths = [items[p] for p in splits["test"]]
+
+# Zonas sanas: ventanas de prueba sin ningún defecto marcado por el experto
+healthy = [(job, found) for job, found in test_windows if not boxes_in_window(items[job[0]], job[1], min_visible=0.0)]
+healthy_with_alarm = sum(1 for _, found in healthy if any(b.score >= threshold for b in found))
+print(f"Zonas sanas en prueba: {len(healthy)} · con falsa alarma: {healthy_with_alarm}")
 coco = map50("test", test_preds)
 classes = per_class(test_preds, test_truths, threshold)
 metrics = {
     "modulo": MODULO,
+    "version": VERSION,
     "modelo": MODEL_ID,
+    "objetivo_recall_validacion": TARGET_RECALL,
     "mejor_epoca": best_epoch,
     "umbral": threshold,
     "imagenes_prueba": len(test_truths),
     "recall_por_placa": round(image_recall(test_preds, test_truths, threshold), 4),
+    "zonas_sanas_prueba": len(healthy),
+    "zonas_sanas_con_falsa_alarma": healthy_with_alarm,
     **coco,
     "por_clase": {k: {"recall": round(m.recall, 4), "precision": round(m.precision, 4),
                       "aciertos": m.true_positives, "falsas_alarmas": m.false_positives,
@@ -426,7 +469,8 @@ try:
     same = len(a) == len(b) and all(x.label == y.label and abs(x.x_min - y.x_min) < 2 for x, y in zip(a, b))
     print(f"ONNX exportado ({onnx_path.stat().st_size / 1e6:.0f} MB) · mismos hallazgos que PyTorch: {'sí ✅' if same else 'NO ⚠️'}")
     (WORK / f"modelo_{MODULO}.json").write_text(json.dumps(
-        {"labels": LABELS, "umbral": threshold, "img_size": IMG_SIZE, "modelo": MODEL_ID,
+        {"labels": LABELS, "umbral": threshold, "img_size": IMG_SIZE, "modelo": MODEL_ID, "version": VERSION,
+         "ventanas": {"overlap": OVERLAP, "min_ratio": MIN_RATIO},
          "onnx_verificado": same}, indent=2, ensure_ascii=False))
 except Exception as error:
     print("⚠️ No se pudo exportar a ONNX (el modelo entrenado igual quedó guardado):", error)

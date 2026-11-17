@@ -17,6 +17,7 @@ import numpy as np
 from PIL import Image
 
 from revision_pipes.annotations import Box
+from revision_pipes.tiling import merge, to_plate, windows
 
 INPUT_SIZE = 640
 
@@ -85,5 +86,11 @@ class Detector:
         return cls(session, labels, threshold)
 
     def predict(self, image: Image.Image) -> list[Box]:
-        logits, pred_boxes = self.session.run(None, {"pixel_values": prepare(image)})[:2]
-        return decode(logits, pred_boxes, image.size, self.labels, self.threshold)
+        """Detecta en la imagen. Si es alargada, la corta en ventanas superpuestas y une."""
+        found = []
+        for window in windows(*image.size):
+            crop = image.crop(window)
+            logits, pred_boxes = self.session.run(None, {"pixel_values": prepare(crop)})[:2]
+            found += to_plate(decode(logits, pred_boxes, crop.size, self.labels, self.threshold),
+                              window)
+        return merge(found)

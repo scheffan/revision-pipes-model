@@ -72,7 +72,7 @@ def test_decode_rechaza_cantidad_de_clases_incorrecta():
 def test_detector_usa_la_sesion_y_devuelve_recuadros():
     session = FakeSession(_raw([((0.1, 0.8), (0.5, 0.5, 0.5, 0.5))]))
     detector = Detector(session, LABELS, threshold=0.5)
-    result = detector.predict(Image.new("RGB", (64, 32)))
+    result = detector.predict(Image.new("RGB", (64, 48)))
     assert session.received["pixel_values"].shape == (1, 3, INPUT_SIZE, INPUT_SIZE)
     assert [b.label for b in result] == ["fisura"]
 
@@ -85,3 +85,20 @@ def test_detector_sin_hallazgos_devuelve_lista_vacia():
 def test_umbral_invalido_da_error():
     with pytest.raises(ValueError):
         Detector(FakeSession(()), LABELS, threshold=1.5)
+
+
+def test_placa_alargada_se_procesa_por_ventanas_y_vuelve_a_coordenadas_de_placa():
+    # El modelo falso siempre "ve" un defecto en el centro de cada ventana
+    session = FakeSession(_raw([((0.9, 0.1), (0.5, 0.5, 0.1, 0.1))]))
+    calls = []
+    original_run = session.run
+
+    def run(names, feed):
+        calls.append(feed)
+        return original_run(names, feed)
+
+    session.run = run
+    result = Detector(session, LABELS, threshold=0.5).predict(Image.new("RGB", (3000, 600)))
+    assert len(calls) > 1  # se usaron varias ventanas
+    assert all(0 <= b.x_min < b.x_max <= 3000 for b in result)
+    assert len({round(b.x_min) for b in result}) == len(result)  # sin duplicados

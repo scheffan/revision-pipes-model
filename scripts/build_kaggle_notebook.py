@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src" / "revision_pipes"
 MODULES = ["annotations.py", "splits.py", "taxonomy.py", "visualize.py"]
-MODULES_E2 = MODULES + ["metrics.py", "inference.py"]
+MODULES_E2 = MODULES + ["metrics.py", "tiling.py", "inference.py"]
 
 
 def md(text: str) -> dict:

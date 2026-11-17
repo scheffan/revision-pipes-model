@@ -133,3 +133,13 @@ Las métricas quedan en `docs/metricas/radiografias.json` y un test del CI falla
 2. **Soldaduras verticales.** Una falta de penetración vertical se confundió con porosidad: casi todas las soldaduras de entrenamiento son horizontales. Solución: sumar rotaciones de 90° a las variaciones de entrenamiento.
 
 Estas dos mejoras atacan la causa de los errores, que es mejor que solo probar un modelo más grande.
+
+### Segunda versión (v2): ventanas superpuestas + rotaciones
+
+- **Ventanas:** las placas alargadas (lado largo / lado corto ≥ 1,5) se cortan en cuadrados del lado corto que se pisan un 25 %. Se entrena y se detecta por ventana; los recuadros vuelven a la placa y los duplicados se unen. Un recuadro cortado por el borde se usa solo si se ve al menos el 40 %.
+- **Sin fuga:** todas las ventanas de una placa quedan en el mismo conjunto que la placa.
+- **Zonas sanas:** las ventanas sin defectos permiten medir, por primera vez, cuántas falsas alarmas da el modelo en partes sanas de una placa real.
+- **Rotaciones de 90°** en el 30 % de las imágenes de entrenamiento, para soldaduras verticales.
+- **Umbral con margen:** en validación se apunta al 97 % de placas marcadas, para que en prueba quede cerca del 95 %.
+- La app usa las mismas ventanas automáticamente cuando la imagen es alargada.
+- Las métricas se siguen calculando por placa completa, así que se pueden comparar directo con la v1.
