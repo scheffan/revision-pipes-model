@@ -45,6 +45,8 @@ def draw_boxes(
         )
         if show_numbers:
             tag = f"{number} {box.label}"
+            if box.score is not None:
+                tag += f" {box.score:.0%}"
             left, top, right, bottom = draw.textbbox((box.x_min, box.y_min), tag)
             draw.rectangle([left - 2, top - 2, right + 2, bottom + 2], fill=color)
             draw.text((box.x_min, box.y_min), tag, fill=(255, 255, 255))

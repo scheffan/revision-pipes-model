@@ -28,3 +28,13 @@ def test_etiqueta_desconocida_queda_marcada_para_revisar():
 def test_clases_comunes_sin_duplicados():
     assert len(COMMON_CLASSES) == len(set(COMMON_CLASSES))
     assert "fisura" in COMMON_CLASSES
+
+
+def test_clases_de_entrenamiento_agrupan_las_raras():
+    from revision_pipes.taxonomy import TRAINING_CLASSES_RX, to_training_class
+
+    assert to_training_class("porosidad") == "porosidad"
+    assert to_training_class("perforacion") == "otro defecto"
+    assert to_training_class("otro: algo raro") == "otro defecto"
+    assert to_training_class("sin defecto") is None
+    assert len(TRAINING_CLASSES_RX) == 6

@@ -28,6 +28,7 @@ class Box:
     x_max: float
     y_max: float
     label: str
+    score: float | None = None  # confianza del modelo; None si es una anotación humana
 
     @property
     def width(self) -> float:
@@ -49,6 +50,7 @@ class Box:
             x_max=min(max(self.x_max, 0.0), image_width),
             y_max=min(max(self.y_max, 0.0), image_height),
             label=self.label,
+            score=self.score,
         )
 
     def is_valid(self) -> bool:
@@ -115,3 +117,12 @@ def clean(boxes: Iterable[Box], image_width: int, image_height: int) -> list[Box
     """Recorta los recuadros a la imagen y descarta los que quedan sin tamaño."""
     clipped = (box.clip(image_width, image_height) for box in boxes)
     return [box for box in clipped if box.is_valid()]
+
+
+def iou(a: Box, b: Box) -> float:
+    """Intersección sobre unión: cuánto se superponen dos recuadros (0 a 1)."""
+    ix = max(0.0, min(a.x_max, b.x_max) - max(a.x_min, b.x_min))
+    iy = max(0.0, min(a.y_max, b.y_max) - max(a.y_min, b.y_min))
+    inter = ix * iy
+    union = a.area + b.area - inter
+    return inter / union if union > 0 else 0.0

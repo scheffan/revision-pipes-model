@@ -49,3 +49,29 @@ def normalize_label(label: str) -> str:
     """Devuelve la clase común. Si el nombre no se conoce, devuelve 'otro: <original>'
     para que aparezca en el análisis y se pueda decidir qué hacer con él."""
     return ALIASES.get(_key(label), f"otro: {label.strip()}")
+
+
+# Clases con las que se entrena el detector de radiografías (Etapa 2).
+# Las que tienen pocos ejemplos se agrupan en "otro defecto": el modelo igual avisa
+# que hay algo, y el inspector decide qué es.
+TRAINING_CLASSES_RX = [
+    "porosidad",
+    "fisura",
+    "inclusion de escoria",
+    "falta de penetracion",
+    "falta de fusion",
+    "otro defecto",
+]
+TRAINING_CLASSES_CORDONES = ["Good Weld", "Bad Weld", "Defect"]
+
+
+def to_training_class(common_label: str) -> str | None:
+    """Pasa una clase común a una de las clases de entrenamiento de radiografías.
+
+    Devuelve None para "sin defecto" (no es un recuadro a detectar).
+    """
+    if common_label == "sin defecto":
+        return None
+    if common_label in TRAINING_CLASSES_RX:
+        return common_label
+    return "otro defecto"

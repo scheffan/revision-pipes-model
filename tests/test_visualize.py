@@ -33,3 +33,8 @@ def test_sin_recuadros_devuelve_la_imagen_igual():
 def test_summarize_cuenta_por_etiqueta():
     boxes = [Box(0, 0, 5, 5, "pipe")] * 3 + [Box(0, 0, 5, 5, "crack")]
     assert summarize(boxes) == {"crack": 1, "pipe": 3}
+
+
+def test_recuadro_del_modelo_muestra_su_confianza():
+    result = draw_boxes(Image.new("L", (200, 200)), [Box(10, 30, 150, 150, "fisura", 0.87)])
+    assert result.getpixel((10, 100)) == RED

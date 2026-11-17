@@ -77,3 +77,16 @@ Recuadros totales: 13.670 (Good Weld 5.485, Defect 4.928, Bad Weld 3.257), inclu
 *Imágenes: datasets "weld" (kunkun) y "weld data" (Vayun Goel), Roboflow Universe, CC BY 4.0.*
 
 **Etapa 1 terminada.**
+
+---
+
+## Etapa 2 · Modelo (en curso, 17-nov-2026)
+
+**Decisiones:**
+- Detector **RT-DETR R18** (Apache 2.0) preentrenado, ajustado a soldaduras. No YOLO de Ultralytics: su licencia AGPL obligaría a publicar el código de la app.
+- Radiografías: 5 defectos principales + **"otro defecto"**, que agrupa los seis tipos con menos de 100 ejemplos. El modelo igual avisa que hay algo y el inspector decide.
+- El umbral de confianza se elige en **validación** para detectar al menos el 95% de las placas con defectos. La evaluación final se hace en **prueba**, con imágenes que el modelo nunca vio.
+- Métricas: mAP@50 (estándar), recall y precisión por tipo de defecto, recall por placa (la que le importa al inspector) y galería de "dónde falla".
+- Exportación a **ONNX** para que la app corra sin placa de video, verificada contra PyTorch con una radiografía real.
+
+**Antes de gastar GPU:** el notebook completo se probó en la nube con un modelo chico y datos simulados (entrenamiento, evaluación, gráficos y exportación). Esa prueba encontró un detalle: con un modelo sin entrenar, todas las posiciones empatan en puntaje y ONNX y PyTorch desempatan distinto. Por eso la verificación final usa una imagen real y compara los hallazgos, no los números crudos.

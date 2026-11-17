@@ -1,4 +1,4 @@
-"""Genera el notebook de Kaggle de la Etapa 1 (datos).
+"""Genera los notebooks de Kaggle: Etapa 1 (datos) y Etapa 2 (modelo).
 
 El repo es privado, así que Kaggle no puede instalar el paquete desde GitHub.
 Este script copia dentro del notebook el código de `src/revision_pipes/` que hace falta,
@@ -17,8 +17,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src" / "revision_pipes"
-OUT = ROOT / "notebooks" / "etapa1_datos_kaggle.ipynb"
 MODULES = ["annotations.py", "splits.py", "taxonomy.py", "visualize.py"]
+MODULES_E2 = MODULES + ["metrics.py", "inference.py"]
 
 
 def md(text: str) -> dict:
@@ -35,7 +35,7 @@ def code(text: str) -> dict:
     }
 
 
-def module_cell(name: str) -> dict:
+def module_cell(name: str) -> dict:  # noqa: D103
     source = (SRC / name).read_text(encoding="utf-8")
     return code(f"%%writefile revision_pipes/{name}\n{source}")
 
@@ -282,9 +282,9 @@ print("Listo. Descargá el notebook con File → Download Notebook y pasáselo a
 ]
 
 
-def build() -> str:
+def build(cells: list) -> str:
     notebook = {
-        "cells": CELLS,
+        "cells": cells,
         "metadata": {
             "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
             "language_info": {"name": "python"},
@@ -295,19 +295,34 @@ def build() -> str:
     return json.dumps(notebook, ensure_ascii=False, indent=1) + "\n"
 
 
+def notebooks() -> dict:
+    from etapa2_cells import cells_etapa2  # noqa: PLC0415
+
+    return {
+        ROOT / "notebooks" / "etapa1_datos_kaggle.ipynb": CELLS,
+        ROOT / "notebooks" / "etapa2_modelo_kaggle.ipynb": cells_etapa2(md, code, module_cell, MODULES_E2),
+    }
+
+
 def main() -> int:
-    content = build()
+    stale = []
+    for path, cells in notebooks().items():
+        content = build(cells)
+        if "--check" in sys.argv:
+            if not path.exists() or path.read_text(encoding="utf-8") != content:
+                stale.append(path.name)
+            continue
+        path.parent.mkdir(exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        print(f"Notebook generado: {path.relative_to(ROOT)}")
+    if stale:
+        print("Desactualizados:", ", ".join(stale), "→ corré python scripts/build_kaggle_notebook.py")
+        return 1
     if "--check" in sys.argv:
-        if not OUT.exists() or OUT.read_text(encoding="utf-8") != content:
-            print("El notebook está desactualizado: corré python scripts/build_kaggle_notebook.py")
-            return 1
-        print("Notebook al día.")
-        return 0
-    OUT.parent.mkdir(exist_ok=True)
-    OUT.write_text(content, encoding="utf-8")
-    print(f"Notebook generado: {OUT.relative_to(ROOT)}")
+        print("Notebooks al día.")
     return 0
 
 
 if __name__ == "__main__":
+    sys.path.insert(0, str(Path(__file__).parent))
     sys.exit(main())
