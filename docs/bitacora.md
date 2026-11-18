@@ -143,3 +143,14 @@ Estas dos mejoras atacan la causa de los errores, que es mejor que solo probar u
 - **Umbral con margen:** en validación se apunta al 97 % de placas marcadas, para que en prueba quede cerca del 95 %.
 - La app usa las mismas ventanas automáticamente cuando la imagen es alargada.
 - Las métricas se siguen calculando por placa completa, así que se pueden comparar directo con la v1.
+
+### Réplica involuntaria de la v1 (17-nov-2026, noche)
+
+Se volvió a correr por error el notebook de la v1 (sin ventanas). Sirvió para medir cuánto varía el resultado entre dos entrenamientos con el mismo código y los mismos datos:
+
+| Corrida | mAP@50 prueba | Placas marcadas | Umbral |
+|---|---|---|---|
+| v1 (primera) | 0,607 | 90,4 % | 0,55 |
+| v1 (réplica) | 0,614 | 93,4 % | 0,50 |
+
+Conclusión: diferencias de 1 punto de mAP o de 3 puntos en placas marcadas pueden ser solo azar del entrenamiento. Para decir que la v2 mejora, la diferencia tiene que ser claramente mayor que eso.
