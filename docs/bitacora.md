@@ -154,3 +154,33 @@ Se volvió a correr por error el notebook de la v1 (sin ventanas). Sirvió para 
 | v1 (réplica) | 0,614 | 93,4 % | 0,50 |
 
 Conclusión: diferencias de 1 punto de mAP o de 3 puntos en placas marcadas pueden ser solo azar del entrenamiento. Para decir que la v2 mejora, la diferencia tiene que ser claramente mayor que eso.
+
+### Resultados de la v2 (ventanas + rotaciones), 18-nov-2026
+
+Corrida en Kaggle (GPU T4, 25 épocas, 2,25 h). Mejor época: 17 (mAP@50 en validación 0,657).
+
+| | v1 | v1 (réplica) | **v2 (ventanas)** |
+|---|---|---|---|
+| mAP@50 en prueba | 0,607 | 0,614 | **0,648** |
+| mAP@50-95 | 0,288 | 0,285 | **0,303** |
+| Placas con defecto marcadas | 90,4 % | 93,4 % | **95,6 %** (390 de 408) |
+| Placas sin marcar | 39 | 27 | **18** |
+| Zonas sanas con falsa alarma | sin medir | sin medir | **22 de 207 (10,6 %)** |
+
+| Defecto | Recall v1 → v2 | Precisión v1 → v2 |
+|---|---|---|
+| Falta de penetración | 81 % → **87 %** | 85 % → 84 % |
+| Porosidad | 75 % → **81 %** | 77 % → 74 % |
+| Fisura | 69 % → **80 %** | 84 % → 74 % |
+| Inclusión de escoria | 64 % → 65 % | 78 % → 80 % |
+| Falta de fusión | 45 % → **53 %** | 62 % → 63 % |
+| Otro defecto | 5 % → 18 % | 25 % → 20 % |
+
+**Lectura:**
+- La mejora de mAP@50 (+3,4 a +4,1 puntos) es varias veces mayor que la diferencia entre las dos corridas de la v1 (0,7 puntos), así que no es azar.
+- **Se cumplió el objetivo del proyecto:** marca el 95,6 % de las placas con defectos en prueba. El margen de seguridad en validación (97 %) funcionó.
+- El modelo encuentra más defectos (sube el recall en casi todas las clases) a cambio de algunas falsas alarmas más. Es el intercambio buscado: la IA prioriza y el inspector descarta.
+- **Primera medición en zonas sanas:** en 1 de cada 10 trozos sanos de placa marca algo que no es. Es un dato honesto para el README y para hablar con los inspectores.
+- "Otro defecto" y falta de fusión siguen siendo los puntos débiles: les faltan ejemplos.
+
+El test de regresión del CI ahora exige el nivel de la v2 (incluido un máximo de 15 % de falsas alarmas en zonas sanas). La v1 queda guardada como referencia.

@@ -1,0 +1,31 @@
+{
+  "modulo": "radiografias",
+  "modelo": "PekingU/rtdetr_r18vd_coco_o365",
+  "fecha": "2026-11-17",
+  "corrida": "Kaggle, GPU T4, 40 épocas en 2,1 h",
+  "mejor_epoca": 13,
+  "map50_validacion": 0.626,
+  "umbral": 0.55,
+  "imagenes_prueba": 408,
+  "recall_por_placa": 0.9044,
+  "map50": 0.6071,
+  "map50_95": 0.2879,
+  "map50_95_por_clase": {
+    "porosidad": 0.3182,
+    "fisura": 0.3695,
+    "inclusion de escoria": 0.2796,
+    "falta de penetracion": 0.5033,
+    "falta de fusion": 0.2083,
+    "otro defecto": 0.0483
+  },
+  "por_clase": {
+    "porosidad": {"recall": 0.7458, "precision": 0.7699, "aciertos": 358, "falsas_alarmas": 107, "perdidos": 122},
+    "fisura": {"recall": 0.6919, "precision": 0.844, "aciertos": 119, "falsas_alarmas": 22, "perdidos": 53},
+    "inclusion de escoria": {"recall": 0.6418, "precision": 0.7818, "aciertos": 129, "falsas_alarmas": 36, "perdidos": 72},
+    "falta de penetracion": {"recall": 0.8067, "precision": 0.8496, "aciertos": 96, "falsas_alarmas": 17, "perdidos": 23},
+    "falta de fusion": {"recall": 0.4486, "precision": 0.6234, "aciertos": 48, "falsas_alarmas": 29, "perdidos": 59},
+    "otro defecto": {"recall": 0.0455, "precision": 0.25, "aciertos": 1, "falsas_alarmas": 3, "perdidos": 21}
+  },
+  "placas": {"con_defecto": 408, "marcadas": 369, "sin_marcar": 39, "sanas_en_prueba": 0},
+  "onnx": {"tamano_mb": 81, "mismos_hallazgos_que_pytorch": true}
+}
