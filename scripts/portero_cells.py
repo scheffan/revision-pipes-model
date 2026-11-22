@@ -98,7 +98,11 @@ EXTS = {".jpg", ".jpeg", ".png", ".bmp"}
 
 
 def images_in(folder: Path) -> list:
-    return sorted(p for p in folder.rglob("*") if p.suffix.lower() in EXTS)
+    # Los zips armados en Mac traen copias basura ("__MACOSX/._foto.jpg") que no son imágenes
+    return sorted(
+        p for p in folder.rglob("*")
+        if p.suffix.lower() in EXTS and not p.name.startswith("._") and "__MACOSX" not in p.parts
+    )
 
 
 def original_name(path: Path) -> str:
@@ -145,7 +149,7 @@ group_of.update(group_images(weld))
 rng = random.Random(SEED)
 fotos = images_in(DATA / "imagenette")
 rng.shuffle(fotos)
-torax = sorted(p for p in Path("/kaggle/input").rglob("*.jpeg") if "chest" in str(p).lower())
+torax = [p for p in images_in(Path("/kaggle/input")) if "chest" in str(p).lower()]
 rng.shuffle(torax)
 if not torax:
     print("⚠️ No encontré las radiografías de tórax: agregá el dataset chest-xray-pneumonia en Add Input.")
