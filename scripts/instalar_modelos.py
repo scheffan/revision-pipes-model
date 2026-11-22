@@ -57,7 +57,7 @@ def main() -> int:
         return 1
     found = install(sources)
     for modulo, exts in sorted(found.items()):
-        estado = "listo ✅" if exts == {"onnx", "json"} else "falta el .onnx (bajalo de Kaggle)"
+        estado = "listo" if exts == {"onnx", "json"} else "falta el .onnx (bajalo de Kaggle)"
         print(f"Modelo de {modulo}: {estado}")
     return 0
 
