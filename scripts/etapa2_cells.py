@@ -57,7 +57,7 @@ import numpy as np
 import torch
 from PIL import Image, ImageEnhance
 
-from revision_pipes.annotations import Box, clean, from_coco
+from revision_pipes.annotations import Box, clean, from_coco, iou
 from revision_pipes.inference import decode
 from revision_pipes.metrics import choose_threshold, image_recall, per_class
 from revision_pipes.splits import split_by_group
@@ -470,10 +470,14 @@ class Wrapper(torch.nn.Module):
 onnx_path = WORK / f"modelo_{MODULO}.onnx"
 try:
     model.eval().to("cpu")
-    # Se exporta y se verifica con una radiografía real de validación (no con ruido):
-    # con ruido, varias posiciones empatan en puntaje y cada motor elige distinto.
-    with Image.open(splits["val"][0]) as im:
-        sample = torch.from_numpy(np.asarray(im.convert("RGB").resize((IMG_SIZE, IMG_SIZE)), dtype=np.float32) / 255.0).permute(2, 0, 1)[None]
+    # Se exporta con una imagen real de validación (no con ruido: con ruido varias posiciones
+    # empatan en puntaje y cada motor elige distinto).
+    def as_tensor(path):
+        with Image.open(path) as im:
+            arr = np.asarray(im.convert("RGB").resize((IMG_SIZE, IMG_SIZE)), dtype=np.float32) / 255.0
+        return torch.from_numpy(arr).permute(2, 0, 1)[None]
+
+    sample = as_tensor(splits["val"][0])
     try:
         torch.onnx.export(Wrapper(model), (sample,), str(onnx_path), input_names=["pixel_values"],
                           output_names=["logits", "pred_boxes"], opset_version=17, dynamo=False)
@@ -483,14 +487,24 @@ try:
     import onnxruntime as ort
 
     session = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
-    onnx_logits, onnx_boxes = session.run(None, {"pixel_values": sample.numpy()})
-    with torch.no_grad():
-        ref = model(pixel_values=sample)
     size = (IMG_SIZE, IMG_SIZE)
-    a = decode(onnx_logits[0], onnx_boxes[0], size, LABELS, threshold)
-    b = decode(ref.logits[0].numpy(), ref.pred_boxes[0].numpy(), size, LABELS, threshold)
-    same = len(a) == len(b) and all(x.label == y.label and abs(x.x_min - y.x_min) < 2 for x, y in zip(a, b))
-    print(f"ONNX exportado ({onnx_path.stat().st_size / 1e6:.0f} MB) · mismos hallazgos que PyTorch: {'sí ✅' if same else 'NO ⚠️'}")
+
+    def findings_match(x):
+        # Mismos hallazgos como conjunto (misma clase, IoU >= 0,9). Se ignoran los pegados
+        # al umbral (+-0,02): un redondeo mínimo entre motores puede dejarlos de un lado
+        # o del otro sin que nada esté mal.
+        onnx_logits, onnx_boxes = session.run(None, {"pixel_values": x.numpy()})
+        with torch.no_grad():
+            ref = model(pixel_values=x)
+        a = decode(onnx_logits[0], onnx_boxes[0], size, LABELS, threshold)
+        b = decode(ref.logits[0].numpy(), ref.pred_boxes[0].numpy(), size, LABELS, threshold)
+        firm = lambda boxes: [f for f in boxes if f.score >= threshold + 0.02]
+        paired = lambda xs, ys: all(any(y.label == f.label and iou(f, y) >= 0.9 for y in ys) for f in xs)
+        return paired(firm(a), b) and paired(firm(b), a)
+
+    checked = splits["val"][:10]
+    same = all(findings_match(as_tensor(p)) for p in checked)
+    print(f"ONNX exportado ({onnx_path.stat().st_size / 1e6:.0f} MB) · mismos hallazgos que PyTorch en {len(checked)} imágenes: {'sí ✅' if same else 'NO ⚠️'}")
     (WORK / f"modelo_{MODULO}.json").write_text(json.dumps(
         {"labels": LABELS, "umbral": threshold, "img_size": IMG_SIZE, "modelo": MODEL_ID, "version": VERSION,
          "ventanas": {"overlap": OVERLAP, "min_ratio": MIN_RATIO},

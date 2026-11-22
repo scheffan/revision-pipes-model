@@ -1,0 +1,186 @@
+{
+  "modulo": "cordones",
+  "version": "v2-ventanas",
+  "modelo": "PekingU/rtdetr_r18vd_coco_o365",
+  "fecha": "2026-11-22",
+  "corrida": "Kaggle, GPU T4, 25 épocas en 1,2 h",
+  "mejor_epoca": 14,
+  "map50_validacion": 0.596,
+  "objetivo_recall_validacion": 0.97,
+  "umbral": 0.15,
+  "imagenes_prueba": 149,
+  "recall_por_placa": 0.9773,
+  "imagenes_sin_defecto_prueba": 61,
+  "imagenes_sin_defecto_con_falsa_alarma": 23,
+  "zonas_sanas_prueba": 0,
+  "zonas_sanas_con_falsa_alarma": 0,
+  "map50": 0.5489,
+  "map50_95": 0.31,
+  "map50_95_por_clase": {
+    "Good Weld": 0.4,
+    "Bad Weld": 0.395,
+    "Defect": 0.135
+  },
+  "por_clase": {
+    "Bad Weld": {
+      "recall": 0.7966,
+      "precision": 0.5529,
+      "aciertos": 94,
+      "falsas_alarmas": 76,
+      "perdidos": 24
+    },
+    "Defect": {
+      "recall": 0.6514,
+      "precision": 0.1787,
+      "aciertos": 114,
+      "falsas_alarmas": 524,
+      "perdidos": 61
+    },
+    "Good Weld": {
+      "recall": 0.7026,
+      "precision": 0.4567,
+      "aciertos": 137,
+      "falsas_alarmas": 163,
+      "perdidos": 58
+    }
+  },
+  "historial": [
+    {
+      "epoch": 1,
+      "loss": 34.09549789053802,
+      "val_map50": 0.316
+    },
+    {
+      "epoch": 2,
+      "loss": 12.42965268737268,
+      "val_map50": 0.4251
+    },
+    {
+      "epoch": 3,
+      "loss": 11.1616843408683,
+      "val_map50": 0.478
+    },
+    {
+      "epoch": 4,
+      "loss": 10.43232268021792,
+      "val_map50": 0.5021
+    },
+    {
+      "epoch": 5,
+      "loss": 9.895644216045408,
+      "val_map50": 0.5359
+    },
+    {
+      "epoch": 6,
+      "loss": 9.457976154964738,
+      "val_map50": 0.5164
+    },
+    {
+      "epoch": 7,
+      "loss": 9.049339821649125,
+      "val_map50": 0.5262
+    },
+    {
+      "epoch": 8,
+      "loss": 8.680896832843377,
+      "val_map50": 0.5499
+    },
+    {
+      "epoch": 9,
+      "loss": 8.297232363089297,
+      "val_map50": 0.5684
+    },
+    {
+      "epoch": 10,
+      "loss": 8.03748861987702,
+      "val_map50": 0.5734
+    },
+    {
+      "epoch": 11,
+      "loss": 7.717782027598388,
+      "val_map50": 0.574
+    },
+    {
+      "epoch": 12,
+      "loss": 7.549153322083944,
+      "val_map50": 0.5721
+    },
+    {
+      "epoch": 13,
+      "loss": 7.321345774488894,
+      "val_map50": 0.58
+    },
+    {
+      "epoch": 14,
+      "loss": 7.107820015281659,
+      "val_map50": 0.5957
+    },
+    {
+      "epoch": 15,
+      "loss": 6.926861142057752,
+      "val_map50": 0.5933
+    },
+    {
+      "epoch": 16,
+      "loss": 6.793423847132877,
+      "val_map50": 0.5846
+    },
+    {
+      "epoch": 17,
+      "loss": 6.644258577642042,
+      "val_map50": 0.584
+    },
+    {
+      "epoch": 18,
+      "loss": 6.490821846580037,
+      "val_map50": 0.5752
+    },
+    {
+      "epoch": 19,
+      "loss": 6.441250102818745,
+      "val_map50": 0.576
+    },
+    {
+      "epoch": 20,
+      "loss": 6.369153371899954,
+      "val_map50": 0.5733
+    },
+    {
+      "epoch": 21,
+      "loss": 6.328345855272373,
+      "val_map50": 0.5779
+    },
+    {
+      "epoch": 22,
+      "loss": 6.2205461823090875,
+      "val_map50": 0.5781
+    },
+    {
+      "epoch": 23,
+      "loss": 6.218527328763019,
+      "val_map50": 0.5796
+    },
+    {
+      "epoch": 24,
+      "loss": 6.146274098600158,
+      "val_map50": 0.5744
+    },
+    {
+      "epoch": 25,
+      "loss": 6.161019952057035,
+      "val_map50": 0.5853
+    }
+  ],
+  "placas": {
+    "con_defecto": 88,
+    "marcadas": 86,
+    "sin_marcar": 2,
+    "sin_defecto": 61,
+    "sin_defecto_con_falsa_alarma": 23
+  },
+  "onnx": {
+    "tamano_mb": 81,
+    "mismos_hallazgos_que_pytorch": true,
+    "nota": "La prueba automática de Kaggle dio NO por ser demasiado estricta (orden exacto con puntajes casi empatados). Revisado a mano el 22-nov-2026: 9 imágenes, todos los hallazgos coinciden (IoU ≥ 0,9, misma clase)."
+  }
+}

@@ -194,3 +194,43 @@ La última fila muestra justo el caso que fallaba en la v1: una placa completa y
 ![Dónde falla la v2](capturas/etapa2-v2-donde-falla.png)
 
 Lo que todavía se escapa: un solo defecto muy chico en una placa alargada, a veces pegado al borde. Son 18 de 408 placas.
+
+### Fotos de cordones, primera versión (22-nov-2026)
+
+Mismo detector y mismo notebook que radiografías, generado con `MODULO = "cordones"`. Cambios para este módulo:
+
+- **"Cordón bueno" no cuenta como defecto.** El umbral de seguridad, el recall por imagen y las galerías miran solo "cordón malo" y "defecto".
+- **Métrica nueva:** fotos sin ningún defecto real en las que el modelo igual marca uno.
+- **Validación y prueba con una sola copia por foto.** Los datasets de cordones traen muchas copias rotadas o espejadas; sin esto, el mismo caso contaba varias veces y las métricas salían infladas.
+
+Corrida en Kaggle (GPU T4, 25 épocas, 1,2 h). Mejor época: 14 (mAP@50 en validación 0,596). Prueba: 149 fotos que el modelo nunca vio.
+
+| | Cordones v1 |
+|---|---|
+| mAP@50 en prueba | 0,549 |
+| Fotos con defecto marcadas | **97,7 %** (86 de 88) |
+| Fotos sanas con falsa alarma | **23 de 61 (38 %)** |
+| Umbral elegido en validación | 0,15 |
+
+| Clase | Recall | Precisión |
+|---|---|---|
+| Cordón malo | 80 % | 55 % |
+| Defecto puntual | 65 % | 18 % |
+| Cordón bueno | 70 % | 46 % |
+
+**Lectura:**
+- Cumple el objetivo de seguridad (≥ 95 % de fotos con defecto marcadas), pero a costa de un umbral muy permisivo: 0,15 contra 0,5 en radiografías.
+- Las fotos de cordones son mucho más variadas que las radiografías (luz, ángulo, fondo, cámara), por eso la nota general es más baja (0,55 contra 0,65).
+- **Muchas marcas "defecto" de baja confianza (15–30 %).** Son la mayor parte de las falsas alarmas. Para la app: mostrarlas como "revisar" y no como "defecto", y reservar el rojo para confianza alta. Encaja con el principio del proyecto: la IA prioriza, el inspector decide.
+- **Parte de las "falsas alarmas" son etiquetas incompletas.** En la galería, una foto etiquetada solo con un cordón bueno tiene al lado un cordón claramente defectuoso que el etiquetador no marcó; el modelo sí lo marca. La métrica castiga al modelo por eso, así que el 38 % es un techo, no el número real.
+- Los dos casos que se escapan son difíciles: un defecto visto por un espejo de inspección dentro del caño, y un defecto chico en el borde de una foto con texto encima.
+
+**Archivo para la app (ONNX):** la prueba automática del notebook dio "NO". Revisado a mano: en 9 imágenes, todos los hallazgos del ONNX coinciden con los del modelo original (misma clase, IoU ≥ 0,9). La prueba exigía el mismo orden exacto, y con puntajes casi empatados el orden puede cambiar sin que nada esté mal. Se corrigió el notebook para comparar los hallazgos como conjunto en 10 imágenes de validación.
+
+El test de regresión del CI ahora cubre los dos módulos. En cordones exige recall por imagen ≥ 95 %, mAP@50 ≥ 0,52 y que las falsas alarmas en fotos sanas no pasen del 40 % (la línea de base a bajar).
+
+![Curvas de cordones](capturas/etapa2-curvas-cordones.png)
+
+![Experto vs. modelo, cordones](capturas/etapa2-predicciones-cordones.png)
+
+![Dónde falla, cordones](capturas/etapa2-donde-falla-cordones.png)
