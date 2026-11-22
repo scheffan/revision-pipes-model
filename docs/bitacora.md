@@ -234,3 +234,15 @@ El test de regresión del CI ahora cubre los dos módulos. En cordones exige rec
 ![Experto vs. modelo, cordones](capturas/etapa2-predicciones-cordones.png)
 
 ![Dónde falla, cordones](capturas/etapa2-donde-falla-cordones.png)
+
+## Etapa 4 · App del inspector
+
+### Paso 1: analizar una imagen (22-nov-2026)
+
+Dos pestañas, **Radiografía** y **Foto del cordón**, cada una con su modelo. Subís la imagen y la app marca, cuenta y resume.
+
+- **Tres niveles por hallazgo:** 🔴 posible defecto (el modelo está seguro), 🟡 revisar (duda) y 🟢 bien (cordón sano). El umbral del modelo sigue siendo el que asegura no perder defectos; el segundo umbral (provisorio, 0,5) solo decide si se pinta rojo o amarillo y nunca oculta nada. Responde a lo que se vio en cordones: muchas marcas de baja confianza.
+- **Recuadros encimados:** si dos de la misma clase quedan uno casi entero dentro del otro, se muestra el más seguro.
+- El color nunca va solo: cada recuadro lleva número, nombre en español y porcentaje (fuente con tildes incluida en el paquete).
+- Resumen en una línea ("2 posibles defectos y 4 para revisar"), contadores y tabla de hallazgos. Aclara que la IA sugiere y decide el inspector.
+- `scripts/instalar_modelos.py` copia los modelos desde los .zip de Kaggle a `models/`.

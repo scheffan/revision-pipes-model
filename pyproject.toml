@@ -21,6 +21,9 @@ dev = ["pytest>=8.0", "ruff>=0.6"]
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+revision_pipes = ["assets/*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
