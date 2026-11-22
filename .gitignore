@@ -16,6 +16,7 @@ data/*
 # Modelos entrenados (se publican aparte)
 models/*
 !models/README.md
+!models/*.json
 
 # Claves y configuración local
 .env
