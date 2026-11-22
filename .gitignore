@@ -26,3 +26,10 @@ models/*
 Thumbs.db
 .vscode/
 .idea/
+
+# Descargas de Kaggle (notebooks ejecutados y resultados): no se versionan
+*.zip
+/__notebook_source__.ipynb
+/*notebook*.ipynb
+notebooks/notebook*.ipynb
+notebooks/etapa2-*.ipynb
