@@ -27,3 +27,29 @@ jobs:
 
       - name: Tests (pytest)
         run: pytest
+
+      - name: Casos gemelos de la app web al día
+        run: python scripts/generate_web_fixtures.py --check
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Tipos (TypeScript)
+        run: npx tsc --noEmit
+
+      - name: Pruebas gemelas (igual que Python)
+        run: npm test

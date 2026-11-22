@@ -50,7 +50,7 @@ def decode(
     best_score = scores.max(axis=1)
     width, height = image_size
     boxes = []
-    for query in np.argsort(-best_score):
+    for query in np.argsort(-best_score, kind="stable"):
         score = float(best_score[query])
         if score < threshold:
             break
