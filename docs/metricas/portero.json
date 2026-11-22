@@ -1,0 +1,60 @@
+{
+  "modelo": "mobilenet_v3_small (torchvision, ImageNet)",
+  "labels": [
+    "radiografia",
+    "foto_cordon",
+    "otra"
+  ],
+  "fecha": "2026-11-22",
+  "corrida": "Kaggle, GPU T4, 8 épocas en 16 min",
+  "imagenes_prueba": 1229,
+  "exactitud": 0.9967,
+  "por_clase": {
+    "radiografia": {
+      "imagenes": 406,
+      "exactitud": 1.0
+    },
+    "foto_cordon": {
+      "imagenes": 151,
+      "exactitud": 1.0
+    },
+    "otra": {
+      "imagenes": 672,
+      "exactitud": 0.994
+    }
+  },
+  "matriz_confusion": {
+    "filas_verdad_columnas_prediccion": [
+      "radiografia",
+      "foto_cordon",
+      "otra"
+    ],
+    "valores": [
+      [
+        406,
+        0,
+        0
+      ],
+      [
+        0,
+        151,
+        0
+      ],
+      [
+        0,
+        4,
+        668
+      ]
+    ]
+  },
+  "torax_prueba": 216,
+  "torax_tomadas_por_radiografia_de_soldadura": 0,
+  "umbral_no_seguro": 0.6,
+  "no_seguro_prueba": 3,
+  "errores_con_confianza_alta": 2,
+  "mejor_exactitud_validacion": 0.9959,
+  "onnx": {
+    "tamano_mb": 6.1,
+    "mismos_hallazgos_que_pytorch": true
+  }
+}

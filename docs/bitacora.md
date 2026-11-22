@@ -258,3 +258,20 @@ Notebook `portero_kaggle.ipynb`: clasificador **MobileNetV3-Small** (torchvision
 Se mide exactitud por clase, matriz de confusión, cuántas de tórax pasan como radiografía de soldadura y cuántos errores tienen confianza alta. Por debajo de 60 % de confianza la app va a decir "no estoy seguro". La normalización va dentro del modelo exportado (recibe píxeles entre 0 y 1).
 
 Al armar la exportación apareció el error de modo entrenamiento descripto arriba; se corrigió en los dos notebooks.
+
+### Resultados del portero (22-nov-2026)
+
+Corrida en Kaggle (GPU T4, 8 épocas, 16 min). Mejor exactitud en validación: 99,6 %. Prueba: 1.229 imágenes nunca vistas.
+
+| Lo que era → lo que dijo | radiografía | foto de cordón | otra |
+|---|---|---|---|
+| **radiografía** (406) | **406** | 0 | 0 |
+| **foto de cordón** (151) | 0 | **151** | 0 |
+| **otra** (672) | 0 | 4 | **668** |
+
+- **Exactitud: 99,7 %.** Ninguna radiografía ni foto de cordón quedó mal clasificada.
+- **Radiografías de tórax tomadas por radiografía de soldadura: 0 de 216.** La trampa más difícil, superada.
+- **Los 4 errores** son fotos comunes (un parapente, un objeto metálico, un cielo gris con pájaros, un perro en el agua) que dijo "foto de cordón" con 52–77 % de confianza. Tres de los cuatro quedan cerca o debajo del 60 %, donde la app va a decir "no estoy seguro".
+- El archivo para la app pesa 6 MB y da la misma respuesta que el modelo original.
+
+Para la app: si el portero dice otra cosa que la pestaña elegida, avisa y ofrece cambiar; si dice "otra", no analiza; por debajo de 60 % pregunta antes de analizar. El test de regresión del CI exige ≥ 99 % de exactitud y cero radiografías de tórax confundidas.

@@ -62,3 +62,13 @@ def test_radiografias_falsas_alarmas_en_zonas_sanas_no_superan_el_15_por_ciento(
 def test_cordones_falsas_alarmas_en_fotos_sanas_no_empeoran():
     m = load("cordones")
     assert m["imagenes_sin_defecto_con_falsa_alarma"] / m["imagenes_sin_defecto_prueba"] <= 0.40
+
+
+def test_portero_distingue_los_tipos_de_imagen():
+    m = load("portero")
+    assert m["exactitud"] >= 0.99
+    assert m["por_clase"]["radiografia"]["exactitud"] >= 0.99
+    assert m["por_clase"]["foto_cordon"]["exactitud"] >= 0.98
+    # Una radiografía de tórax nunca debería pasar como radiografía de soldadura
+    assert m["torax_tomadas_por_radiografia_de_soldadura"] == 0
+    assert m["onnx"]["mismos_hallazgos_que_pytorch"] is True
