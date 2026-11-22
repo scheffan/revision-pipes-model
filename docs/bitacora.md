@@ -184,3 +184,13 @@ Corrida en Kaggle (GPU T4, 25 épocas, 2,25 h). Mejor época: 17 (mAP@50 en vali
 - "Otro defecto" y falta de fusión siguen siendo los puntos débiles: les faltan ejemplos.
 
 El test de regresión del CI ahora exige el nivel de la v2 (incluido un máximo de 15 % de falsas alarmas en zonas sanas). La v1 queda guardada como referencia.
+
+![Curvas de la v2](capturas/etapa2-v2-curvas.png)
+
+![Experto vs. modelo, v2](capturas/etapa2-v2-predicciones.png)
+
+La última fila muestra justo el caso que fallaba en la v1: una placa completa y alargada con **12 poros diminutos**. Con las ventanas, el modelo marca los 12, igual que el experto.
+
+![Dónde falla la v2](capturas/etapa2-v2-donde-falla.png)
+
+Lo que todavía se escapa: un solo defecto muy chico en una placa alargada, a veces pegado al borde. Son 18 de 408 placas.
