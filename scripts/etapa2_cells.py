@@ -74,6 +74,13 @@ WORK = Path("/kaggle/working")
 DATA = Path("/tmp/data")
 DATA.mkdir(parents=True, exist_ok=True)
 LABELS = TRAINING_CLASSES_RX if MODULO == "radiografias" else TRAINING_CLASSES_CORDONES
+# Clases que cuentan como "hay un problema" para el recall por imagen y las falsas alarmas.
+# En cordones, "Good Weld" es un recuadro verde: no es un defecto.
+DEFECT_LABELS = set(LABELS) - {"Good Weld"}
+
+
+def defects(boxes):
+    return [b for b in boxes if b.label in DEFECT_LABELS]
 """
 
 DOWNLOAD = """
@@ -151,6 +158,15 @@ for name in SOURCES:
     items.update(load_coco_folder(DATA / name))
 groups = group_images(sorted(items))
 splits = split_by_group(sorted(items), lambda p: groups[p], seed=SEED)
+# En validación y prueba se deja UNA imagen por grupo: las copias aumentadas (rotadas,
+# espejadas) de la misma foto contarían el mismo caso varias veces.
+for split in ("val", "test"):
+    seen, unique = set(), []
+    for p in splits[split]:
+        if groups[p] not in seen:
+            seen.add(groups[p])
+            unique.append(p)
+    splits[split] = unique
 for split, paths in splits.items():
     counts = Counter(b.label for p in paths for b in items[p])
     print(f"{split:5s}: {len(paths)} imágenes · {dict(counts.most_common())}")
@@ -349,7 +365,7 @@ EVALUATE = """
 # 1) Umbral elegido en VALIDACIÓN (nunca en prueba)
 val_preds = predict("val")
 val_truths = [items[p] for p in splits["val"]]
-threshold = choose_threshold(val_preds, val_truths, target_recall=TARGET_RECALL)
+threshold = choose_threshold([defects(p) for p in val_preds], [defects(t) for t in val_truths], target_recall=TARGET_RECALL)
 print(f"Umbral elegido en validación: {threshold} (recall por placa ≥ {TARGET_RECALL:.0%})")
 
 # 2) Evaluación final en PRUEBA
@@ -360,6 +376,11 @@ test_truths = [items[p] for p in splits["test"]]
 healthy = [(job, found) for job, found in test_windows if not boxes_in_window(items[job[0]], job[1], min_visible=0.0)]
 healthy_with_alarm = sum(1 for _, found in healthy if any(b.score >= threshold for b in found))
 print(f"Zonas sanas en prueba: {len(healthy)} · con falsa alarma: {healthy_with_alarm}")
+
+# Imágenes sin ningún defecto real (en cordones: solo cordón bueno): ¿el modelo inventa uno?
+clean_imgs = [i for i, t in enumerate(test_truths) if not defects(t)]
+clean_with_alarm = sum(1 for i in clean_imgs if any(b.score >= threshold for b in defects(test_preds[i])))
+print(f"Imágenes sin defectos en prueba: {len(clean_imgs)} · con falsa alarma: {clean_with_alarm}")
 coco = map50("test", test_preds)
 classes = per_class(test_preds, test_truths, threshold)
 metrics = {
@@ -370,7 +391,9 @@ metrics = {
     "mejor_epoca": best_epoch,
     "umbral": threshold,
     "imagenes_prueba": len(test_truths),
-    "recall_por_placa": round(image_recall(test_preds, test_truths, threshold), 4),
+    "recall_por_placa": round(image_recall([defects(p) for p in test_preds], [defects(t) for t in test_truths], threshold), 4),
+    "imagenes_sin_defecto_prueba": len(clean_imgs),
+    "imagenes_sin_defecto_con_falsa_alarma": clean_with_alarm,
     "zonas_sanas_prueba": len(healthy),
     "zonas_sanas_con_falsa_alarma": healthy_with_alarm,
     **coco,
@@ -424,10 +447,10 @@ def found(i):
 
 
 rng = random.Random(SEED)
-with_defects = [i for i, t in enumerate(test_truths) if t]
-good = [i for i in with_defects if found(i)]
-missed = [i for i in with_defects if not found(i)]
-false_alarm = [i for i, t in enumerate(test_truths) if not t and found(i)]
+with_defects = [i for i, t in enumerate(test_truths) if defects(t)]
+good = [i for i in with_defects if defects(found(i))]
+missed = [i for i in with_defects if not defects(found(i))]
+false_alarm = [i for i, t in enumerate(test_truths) if not defects(t) and defects(found(i))]
 comparison(rng.sample(good, min(4, len(good))), "Experto vs. modelo (conjunto de prueba)", f"predicciones_{MODULO}.png")
 comparison((missed[:3] + false_alarm[:2]), "Dónde falla: placas con defecto sin marcar y falsas alarmas", f"donde_falla_{MODULO}.png")
 print(f"Placas con defecto: {len(with_defects)} · marcadas: {len(good)} · sin marcar: {len(missed)} · falsas alarmas en placas sanas: {len(false_alarm)}")
@@ -478,7 +501,7 @@ print("Listo. Resultados en la pestaña Output.")
 """
 
 
-def cells_etapa2(md, code, module_cell, modules):
+def cells_etapa2(md, code, module_cell, modules, modulo="radiografias"):
     return [
         md(INTRO),
         md("## 1. Instalación y configuración"),
@@ -486,7 +509,7 @@ def cells_etapa2(md, code, module_cell, modules):
              "import os\nos.makedirs('revision_pipes', exist_ok=True)\n"
              "open('revision_pipes/__init__.py', 'w').close()"),
         *[module_cell(name) for name in modules],
-        code(CONFIG),
+        code(CONFIG.replace('MODULO = "radiografias"', f'MODULO = "{modulo}"')),
         code(IMPORTS),
         md("## 2. Datos (mismos conjuntos que la Etapa 1)"),
         code(DOWNLOAD),

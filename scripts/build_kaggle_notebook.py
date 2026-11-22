@@ -301,6 +301,9 @@ def notebooks() -> dict:
     return {
         ROOT / "notebooks" / "etapa1_datos_kaggle.ipynb": CELLS,
         ROOT / "notebooks" / "etapa2_modelo_kaggle.ipynb": cells_etapa2(md, code, module_cell, MODULES_E2),
+        ROOT / "notebooks" / "etapa2_cordones_kaggle.ipynb": cells_etapa2(
+            md, code, module_cell, MODULES_E2, modulo="cordones"
+        ),
     }
 
 
