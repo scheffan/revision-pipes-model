@@ -181,6 +181,6 @@
   "onnx": {
     "tamano_mb": 81,
     "mismos_hallazgos_que_pytorch": true,
-    "nota": "La prueba automática de Kaggle dio NO por ser demasiado estricta (orden exacto con puntajes casi empatados). Revisado a mano el 22-nov-2026: 9 imágenes, todos los hallazgos coinciden (IoU ≥ 0,9, misma clase)."
+    "nota": "La prueba automática de Kaggle dio NO por un error de la prueba, no del ONNX: al exportar, el envoltorio dejaba al modelo en modo entrenamiento y la referencia de PyTorch se calculaba en ese modo. Revisado a mano el 22-nov-2026 (9 imágenes, todos los hallazgos coinciden) y corregido en el notebook."
   }
 }

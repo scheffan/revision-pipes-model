@@ -40,3 +40,4 @@ select = ["E", "F", "I", "B", "UP"]
 # El script contiene el código de las celdas como texto; se revisa al correr el notebook.
 "scripts/build_kaggle_notebook.py" = ["E501"]
 "scripts/etapa2_cells.py" = ["E501"]
+"scripts/portero_cells.py" = ["E501"]

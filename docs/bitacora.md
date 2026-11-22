@@ -225,7 +225,7 @@ Corrida en Kaggle (GPU T4, 25 épocas, 1,2 h). Mejor época: 14 (mAP@50 en valid
 - **Parte de las "falsas alarmas" son etiquetas incompletas.** En la galería, una foto etiquetada solo con un cordón bueno tiene al lado un cordón claramente defectuoso que el etiquetador no marcó; el modelo sí lo marca. La métrica castiga al modelo por eso, así que el 38 % es un techo, no el número real.
 - Los dos casos que se escapan son difíciles: un defecto visto por un espejo de inspección dentro del caño, y un defecto chico en el borde de una foto con texto encima.
 
-**Archivo para la app (ONNX):** la prueba automática del notebook dio "NO". Revisado a mano: en 9 imágenes, todos los hallazgos del ONNX coinciden con los del modelo original (misma clase, IoU ≥ 0,9). La prueba exigía el mismo orden exacto, y con puntajes casi empatados el orden puede cambiar sin que nada esté mal. Se corrigió el notebook para comparar los hallazgos como conjunto en 10 imágenes de validación.
+**Archivo para la app (ONNX):** la prueba automática del notebook dio "NO". Revisado a mano: en 9 imágenes, todos los hallazgos del ONNX coinciden con los del modelo original (misma clase, IoU ≥ 0,9). Se corrigió el notebook para comparar los hallazgos como conjunto en 10 imágenes de validación. **Causa real (encontrada después, al armar el portero):** el envoltorio que se usa para exportar arranca en modo entrenamiento y, al terminar, deja al modelo en ese modo; la referencia de PyTorch se calculaba así y daba otra cosa. El ONNX siempre estuvo bien. Ahora el envoltorio y el modelo se ponen en modo evaluación antes de comparar (la explicación anterior de "puntajes empatados" no era la causa).
 
 El test de regresión del CI ahora cubre los dos módulos. En cordones exige recall por imagen ≥ 95 %, mAP@50 ≥ 0,52 y que las falsas alarmas en fotos sanas no pasen del 40 % (la línea de base a bajar).
 
@@ -246,3 +246,15 @@ Dos pestañas, **Radiografía** y **Foto del cordón**, cada una con su modelo. 
 - El color nunca va solo: cada recuadro lleva número, nombre en español y porcentaje (fuente con tildes incluida en el paquete).
 - Resumen en una línea ("2 posibles defectos y 4 para revisar"), contadores y tabla de hallazgos. Aclara que la IA sugiere y decide el inspector.
 - `scripts/instalar_modelos.py` copia los modelos desde los .zip de Kaggle a `models/`.
+
+## Portero: ¿qué imagen es? (22-nov-2026)
+
+Al probar la app, una foto de cordón subida en la pestaña de radiografías se analizó igual: cada detector busca defectos en cualquier cosa. Falta un control de entrada.
+
+Notebook `portero_kaggle.ipynb`: clasificador **MobileNetV3-Small** (torchvision, BSD) con tres clases:
+- **radiografia** y **foto_cordon**: los mismos datasets y la misma separación sin fuga de la Etapa 1.
+- **otra**: 3.000 fotos comunes de Imagenette (Apache 2.0) y 1.500 radiografías de tórax (Kaggle, CC BY 4.0). Las de tórax son la trampa: son radiografías, pero no de soldadura.
+
+Se mide exactitud por clase, matriz de confusión, cuántas de tórax pasan como radiografía de soldadura y cuántos errores tienen confianza alta. Por debajo de 60 % de confianza la app va a decir "no estoy seguro". La normalización va dentro del modelo exportado (recibe píxeles entre 0 y 1).
+
+Al armar la exportación apareció el error de modo entrenamiento descripto arriba; se corrigió en los dos notebooks.

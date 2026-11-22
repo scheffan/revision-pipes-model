@@ -479,13 +479,14 @@ try:
 
     sample = as_tensor(splits["val"][0])
     try:
-        torch.onnx.export(Wrapper(model), (sample,), str(onnx_path), input_names=["pixel_values"],
+        torch.onnx.export(Wrapper(model).eval(), (sample,), str(onnx_path), input_names=["pixel_values"],
                           output_names=["logits", "pred_boxes"], opset_version=17, dynamo=False)
     except Exception:
-        torch.onnx.export(Wrapper(model), (sample,), str(onnx_path), input_names=["pixel_values"],
+        torch.onnx.export(Wrapper(model).eval(), (sample,), str(onnx_path), input_names=["pixel_values"],
                           output_names=["logits", "pred_boxes"], opset_version=18, dynamo=True)
     import onnxruntime as ort
 
+    model.eval()  # la exportación puede dejarlo en modo entrenamiento: la referencia va en evaluación
     session = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
     size = (IMG_SIZE, IMG_SIZE)
 
