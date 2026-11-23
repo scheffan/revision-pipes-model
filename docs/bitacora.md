@@ -275,3 +275,29 @@ Corrida en Kaggle (GPU T4, 8 épocas, 16 min). Mejor exactitud en validación: 9
 - El archivo para la app pesa 6 MB y da la misma respuesta que el modelo original.
 
 Para la app: si el portero dice otra cosa que la pestaña elegida, avisa y ofrece cambiar; si dice "otra", no analiza; por debajo de 60 % pregunta antes de analizar. El test de regresión del CI exige ≥ 99 % de exactitud y cero radiografías de tórax confundidas.
+
+## App web (22-nov-2026)
+
+Streamlit no permitía la experiencia del mockup (visor oscuro, zoom, paneles), así que la app pasó a ser una **página web propia** que corre los modelos **en el navegador** (ONNX Runtime Web). La imagen nunca sale de la compu del usuario y la misma app sirve de demo pública.
+
+**Pantalla "Analizar":**
+1. El **portero** mira la imagen. Si no coincide con la pestaña ("esto parece una foto de cordón, no una radiografía") avisa y ofrece cambiar; si es otra cosa, no analiza; si duda, pregunta.
+2. El detector de la pestaña marca los hallazgos: rojo (seguro), amarillo punteado (revisar), verde (sano), naranja para cordón malo.
+3. **Visor:** zoom con la rueda hacia el puntero, arrastre, brillo, contraste, invertir, mostrar/ocultar zonas sanas; clic en un hallazgo de la lista lo centra y lo acerca.
+4. Los modelos se bajan una sola vez (con barra de progreso) y quedan guardados en el navegador.
+
+**Hallazgo importante: el redimensionado.** La primera versión web marcaba 5 defectos donde Python marcaba 3 en la misma radiografía. Los puntajes eran casi iguales, pero dos porosidades quedaban justo arriba del umbral. La causa: el navegador achica las imágenes con otro algoritmo que Pillow (sin su filtro antialias), y el modelo se entrenó con imágenes achicadas por Pillow. Se replicó el algoritmo de Pillow en TypeScript (`web/src/resize.ts`) y se verificó **byte por byte** contra Pillow con pruebas gemelas. Ahora la web da exactamente lo mismo que Python:
+
+| | Python | Web |
+|---|---|---|
+| Radiografía de ejemplo | 3 posibles defectos | 3 posibles defectos |
+| Foto de cordón de ejemplo | 2 posibles defectos y 4 para revisar | 2 posibles defectos y 4 para revisar |
+| Portero con la foto | foto de cordón, 72 % | foto de cordón, 72 % |
+
+**Pruebas:** 86 pruebas gemelas (lógica y redimensionado iguales a Python) en el CI, y una prueba de punta a punta con Chrome real (`web/e2e/analizar.py`) que sube una radiografía, una foto en la pestaña equivocada y verifica el aviso del portero.
+
+![Radiografía analizada en la app web](capturas/web-02-radiografia.png)
+
+![El portero avisa: es una foto, no una radiografía](capturas/web-04-portero-avisa.png)
+
+![Foto de cordón analizada](capturas/web-05-foto-cordon.png)

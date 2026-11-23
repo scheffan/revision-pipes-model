@@ -58,3 +58,12 @@ describe("casos borde", () => {
     expect(f.level).toBe("bien");
   });
 });
+
+import { resizeRGB } from "../src/resize";
+
+describe("redimensionado igual que Pillow", () => {
+  it.each(cases.resize.map((c, i) => ({ ...c, i })))("$w×$h → $outW×$outH (caso $i)", (c) => {
+    const out = resizeRGB(Uint8Array.from(c.rgba), c.w, c.h, c.outW, c.outH);
+    expect(Array.from(out)).toEqual(c.out);
+  });
+});

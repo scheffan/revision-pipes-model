@@ -39,7 +39,7 @@ def random_boxes(rng, n, size=400):
 
 def build() -> dict:
     rng = np.random.default_rng(7)
-    cases: dict = {"windows": [], "merge": [], "decode": [], "review": [], "to_plate": []}
+    cases: dict = {"windows": [], "merge": [], "decode": [], "review": [], "to_plate": [], "resize": []}
     for w, h in [(640, 640), (3000, 600), (600, 3000), (900, 640), (1000, 600), (1601, 400), (5, 5)]:
         cases["windows"].append({"w": w, "h": h, "out": [list(x) for x in windows(w, h)]})
     for _ in range(25):
@@ -71,6 +71,16 @@ def build() -> dict:
         win = (int(rng.integers(0, 500)), int(rng.integers(0, 500)), 0, 0)
         cases["to_plate"].append({"in": [box_json(b) for b in boxes], "window": list(win),
                                   "out": [box_json(b) for b in to_plate(boxes, win)]})
+    # Redimensionado: la web tiene que dar los mismos bytes que Pillow (BILINEAR), achicando y agrandando
+    from PIL import Image
+
+    for w, h, ow, oh in [(31, 17, 13, 9), (20, 20, 40, 40), (50, 12, 16, 16), (9, 33, 9, 11), (64, 48, 64, 48), (45, 45, 7, 31)]:
+        arr = rng.integers(0, 256, (h, w, 3), dtype=np.uint8)
+        arr[: h // 2] = (np.linspace(0, 255, w)[None, :, None]).astype(np.uint8)  # mitad con degradé
+        out = np.asarray(Image.fromarray(arr).resize((ow, oh), Image.Resampling.BILINEAR))
+        rgba = np.concatenate([arr, np.full((h, w, 1), 255, np.uint8)], axis=2)
+        cases["resize"].append({"w": w, "h": h, "outW": ow, "outH": oh,
+                                "rgba": rgba.flatten().tolist(), "out": out.flatten().tolist()})
     return cases
 
 
