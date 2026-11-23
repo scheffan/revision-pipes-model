@@ -296,6 +296,7 @@ def build(cells: list) -> str:
 
 
 def notebooks() -> dict:
+    from calibracion_cells import cells_calibracion  # noqa: PLC0415
     from etapa2_cells import cells_etapa2  # noqa: PLC0415
     from portero_cells import cells_portero  # noqa: PLC0415
 
@@ -306,6 +307,9 @@ def notebooks() -> dict:
             md, code, module_cell, MODULES_E2, modulo="cordones"
         ),
         ROOT / "notebooks" / "portero_kaggle.ipynb": cells_portero(md, code, module_cell),
+        ROOT / "notebooks" / "calibracion_kaggle.ipynb": cells_calibracion(
+            md, code, module_cell, MODULES_E2 + ["review.py"]
+        ),
     }
 
 
