@@ -11,7 +11,7 @@ from playwright.sync_api import expect, sync_playwright
 
 EJEMPLOS, CAPTURAS = Path(sys.argv[1]), Path(sys.argv[2])
 CAPTURAS.mkdir(parents=True, exist_ok=True)
-URL = "http://localhost:4173/"
+URL = "http://localhost:4173/#/analizar"
 
 with sync_playwright() as p:
     browser = p.chromium.launch(executable_path="/usr/bin/google-chrome", args=["--no-sandbox"])

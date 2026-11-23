@@ -7,6 +7,14 @@ import { decode, dropNested, merge, toPlate, windows, type Box } from "./core";
 import { resizeRGB } from "./resize";
 import type { DetectorConfig, LoadedModel, PorteroConfig } from "./models";
 
+// Una sola inferencia a la vez: el motor wasm corre en un hilo y dos pantallas pueden pedir a la vez.
+let cola: Promise<unknown> = Promise.resolve();
+function enSerie<T>(fn: () => Promise<T>): Promise<T> {
+  const next = cola.then(fn, fn);
+  cola = next.catch(() => undefined);
+  return next;
+}
+
 export type ImageKind = "radiografia" | "foto_cordon" | "otra";
 
 /**
@@ -48,7 +56,7 @@ export async function identify(
 ): Promise<PorteroResult> {
   const { session, config } = model;
   const input = toTensor(image, [0, 0, image.width, image.height], config.img_size);
-  const output = await session.run({ pixel_values: input });
+  const output = await enSerie(() => session.run({ pixel_values: input }));
   const probs = output[session.outputNames[0]].data as Float32Array;
   const entries = config.labels.map((label, i) => [label, probs[i]] as [ImageKind, number]);
   const [kind, confidence] = entries.reduce((a, b) => (b[1] > a[1] ? b : a));
@@ -71,7 +79,7 @@ export async function detect(
   const found: Box[] = [];
   for (const [i, win] of wins.entries()) {
     const input = toTensor(image, win, config.img_size);
-    const out = await session.run({ pixel_values: input });
+    const out = await enSerie(() => session.run({ pixel_values: input }));
     const logits = out[session.outputNames[0]];
     const boxes = out[session.outputNames[1]];
     const numClasses = logits.dims[logits.dims.length - 1];

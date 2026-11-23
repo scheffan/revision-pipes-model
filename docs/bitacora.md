@@ -309,3 +309,31 @@ La app quedó publicada en **https://scheffan.github.io/weld-inspection-ai/** (G
 Verificado en el navegador sobre la versión publicada: baja el portero y el modelo de radiografías con barra de progreso y analiza. Nota: una imagen dibujada a mano que imita una placa (degradé con puntos oscuros) pasó el portero como radiografía; el portero distingue tipos de imagen reales, no detecta montajes.
 
 Para publicar una versión nueva: `web/scripts/publicar.sh <clon de weld-inspection-ai> "mensaje"`.
+
+## App del inspector (22-nov-2026)
+
+La app pasó de "analizar una imagen" a un flujo de trabajo completo. Todo queda guardado **en el navegador** (IndexedDB): no hay servidor ni cuentas, y las imágenes no salen de la compu. Se puede exportar e importar una copia en un archivo.
+
+**Pantallas:**
+1. **Cargar soldadura:** obra, tramo, N.º de junta, progresiva, tipo de unión, material, diámetro, espesor, proceso y soldador, más la radiografía y/o la foto del cordón. El **portero revisa cada imagen al elegirla**: si se pone una foto donde va la radiografía, avisa y ofrece moverla. Al guardar, la IA analiza en segundo plano (si se cierra la pestaña, retoma al volver).
+2. **Bandeja:** juntas ordenadas por riesgo (posibles defectos por confianza → para revisar → sin analizar → sin hallazgos → decididas), con filtros por obra, tramo, estado y búsqueda.
+3. **Revisión:** vistas Radiografía · Foto · **Lado a lado** con el mismo visor. Cada hallazgo se **acepta**, se **descarta** o se le **cambia el tipo**. La **decisión** (aprobada, reparar o rechazada) queda **bloqueada hasta revisar todos los hallazgos**, exige motivo para reparar o rechazar, y registra inspector, norma y fecha. Se puede reabrir.
+4. **Historial (auditoría):** cada carga, análisis de la IA, revisión y decisión queda con fecha y autor.
+5. **Informe:** hoja lista para "Guardar como PDF" con datos de la junta, imágenes marcadas, hallazgos con lo que dijo la IA y lo que decidió el inspector, la decisión y el historial.
+6. **Cargar ejemplo:** una obra de muestra con tres juntas, para quien entra a la demo sin imágenes propias (imágenes de los mismos datasets CC BY 4.0).
+
+**Reglas probadas** (`web/tests/juntas.test.ts`, 12 pruebas): estados, orden de la bandeja, bloqueo de la decisión, cambio de tipo con historial, motivo obligatorio, números de junta repetidos, que la revisión no modifique la junta original.
+
+**Error encontrado en la prueba de punta a punta:** con clics rápidos, un cambio podía guardarse sobre una copia vieja de la junta y pisar el anterior (o el análisis que la IA terminaba en ese momento). Se corrigió: cada cambio lee, modifica y guarda la junta **en una sola transacción** de la base, y los cambios del inspector van en fila.
+
+**Prueba de punta a punta** (`web/e2e/inspector.py`, Chrome real): carga una junta poniendo la foto en el lugar equivocado (el portero avisa y se mueve), espera el análisis, cambia el tipo de un hallazgo, acepta otro y descarta el resto, comprueba que la decisión esté bloqueada hasta el final y que "reparar" exija motivo, decide, genera el informe en PDF, carga la obra de ejemplo, prueba los filtros, recarga la página (todo sigue ahí), reabre la junta y revisa la vista de celular. Sin errores de consola.
+
+Dato que deja la obra de ejemplo: la foto de un cordón **sano** igual recibe 2 "posibles defectos" de baja confianza. Es la falsa alarma ya medida en cordones (38 % de fotos sanas) y la razón de que el inspector tenga que poder descartar.
+
+![Carga con el portero revisando cada imagen](capturas/app-03-carga.png)
+
+![Bandeja ordenada por riesgo](capturas/app-07-bandeja.png)
+
+![Revisión lado a lado](capturas/app-05-lado-a-lado.png)
+
+![Junta decidida con su historial](capturas/app-06-decidida.png)

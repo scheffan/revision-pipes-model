@@ -11,3 +11,9 @@ const DISPLAY_NAMES: Record<string, string> = {
 export function displayName(label: string): string {
   return DISPLAY_NAMES[label] ?? label.charAt(0).toUpperCase() + label.slice(1);
 }
+
+/** Tipos que el inspector puede elegir al corregir un hallazgo, por imagen. */
+export const TIPOS_POR_IMAGEN = {
+  radiografia: ["porosidad", "fisura", "inclusion de escoria", "falta de penetracion", "falta de fusion", "otro defecto"],
+  foto: ["Bad Weld", "Defect"],
+} as const;

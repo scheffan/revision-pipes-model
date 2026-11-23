@@ -4,9 +4,12 @@
  * igual con cualquier zoom.
  */
 import type { Finding } from "./core";
+
+/** Hallazgo para dibujar; si viene de una revisión trae lo que decidió el inspector. */
+export type Marca = Finding & { revision?: "pendiente" | "aceptado" | "descartado"; labelInspector?: string };
 import { displayName } from "./labels";
 
-const COLORS = { defecto: "#dc2626", revisar: "#eab308", bien: "#16a34a", cordonMalo: "#f97316" };
+export const COLORS = { defecto: "#dc2626", revisar: "#eab308", bien: "#16a34a", cordonMalo: "#f97316" };
 
 export interface ViewSettings {
   brightness: number; // 1 = normal
@@ -18,13 +21,14 @@ export interface ViewSettings {
 export class Viewer {
   private ctx: CanvasRenderingContext2D;
   private image: (CanvasImageSource & { width: number; height: number }) | null = null;
-  private findings: Finding[] = [];
+  private findings: Marca[] = [];
   private scale = 1;
   private offset = { x: 0, y: 0 };
   private drag: { x: number; y: number } | null = null;
   selected: number | null = null;
   settings: ViewSettings = { brightness: 1, contrast: 1, invert: false, showGood: true };
   onSelect?: (n: number | null) => void;
+  onZoom?: () => void;
 
   constructor(private canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext("2d")!;
@@ -43,7 +47,18 @@ export class Viewer {
     this.fit();
   }
 
-  setFindings(findings: Finding[]) {
+  clear() {
+    this.image = null;
+    this.findings = [];
+    this.selected = null;
+    this.draw();
+  }
+
+  get hasImage() {
+    return this.image !== null;
+  }
+
+  setFindings(findings: Marca[]) {
     this.findings = findings;
     this.draw();
   }
@@ -57,12 +72,14 @@ export class Viewer {
   fit() {
     if (!this.image) return this.draw();
     const { width, height } = this.canvas.getBoundingClientRect();
+    if (!width || !height) return; // oculto: se ajusta cuando aparezca
     this.scale = Math.min(width / this.image.width, height / this.image.height) * 0.95;
     this.offset = {
       x: (width - this.image.width * this.scale) / 2,
       y: (height - this.image.height * this.scale) / 2,
     };
     this.draw();
+    this.onZoom?.();
   }
 
   zoomBy(factor: number, cx?: number, cy?: number) {
@@ -74,6 +91,7 @@ export class Viewer {
     this.offset = { x: px - (px - this.offset.x) * k, y: py - (py - this.offset.y) * k };
     this.scale = next;
     this.draw();
+    this.onZoom?.();
   }
 
   /** Centra y acerca un hallazgo. */
@@ -168,34 +186,76 @@ export class Viewer {
     ctx.restore();
   }
 
-  private drawFinding(f: Finding) {
-    const { ctx } = this;
-    const b = f.box;
-    const x = this.offset.x + b.xMin * this.scale;
-    const y = this.offset.y + b.yMin * this.scale;
-    const w = (b.xMax - b.xMin) * this.scale;
-    const h = (b.yMax - b.yMin) * this.scale;
-    const color =
-      f.level === "defecto" && b.label === "Bad Weld" ? COLORS.cordonMalo : COLORS[f.level];
-    const selected = this.selected === f.number;
-    ctx.lineWidth = selected ? 3 : f.level === "revisar" ? 1.5 : 2;
-    ctx.setLineDash(f.level === "revisar" ? [6, 4] : []);
-    ctx.strokeStyle = color;
-    ctx.strokeRect(x, y, w, h);
-    ctx.setLineDash([]);
-    if (selected) {
-      ctx.fillStyle = `${color}22`;
-      ctx.fillRect(x, y, w, h);
-    }
-    const tag = `${f.level === "revisar" ? "? " : ""}${f.number} ${displayName(b.label)} ${Math.round((b.score ?? 0) * 100)}%`;
-    ctx.font = "600 12px system-ui, sans-serif";
-    const tw = ctx.measureText(tag).width + 8;
-    const ty = y - 18 < 0 ? y : y - 18;
-    ctx.fillStyle = color;
-    ctx.fillRect(x, ty, tw, 18);
-    ctx.fillStyle = f.level === "revisar" ? "#111" : "#fff";
-    ctx.fillText(tag, x + 4, ty + 13);
+  private drawFinding(f: Marca) {
+    dibujarMarca(this.ctx, f, this.offset, this.scale, this.selected === f.number);
   }
 }
 
-const area = (f: Finding) => (f.box.xMax - f.box.xMin) * (f.box.yMax - f.box.yMin);
+const area = (f: Marca) => (f.box.xMax - f.box.xMin) * (f.box.yMax - f.box.yMin);
+
+/** Dibuja un hallazgo; los textos van en tamaño de pantalla para que se lean con cualquier zoom. */
+export function dibujarMarca(
+  ctx: CanvasRenderingContext2D,
+  f: Marca,
+  offset: { x: number; y: number },
+  scale: number,
+  selected: boolean,
+  fontPx = 12,
+) {
+  const b = f.box;
+  const x = offset.x + b.xMin * scale;
+  const y = offset.y + b.yMin * scale;
+  const w = (b.xMax - b.xMin) * scale;
+  const h = (b.yMax - b.yMin) * scale;
+  const descartado = f.revision === "descartado";
+  const label = f.labelInspector ?? b.label;
+  const color = descartado
+    ? "#64748b"
+    : f.level === "defecto" && label === "Bad Weld"
+      ? COLORS.cordonMalo
+      : COLORS[f.level];
+  const dashed = f.level === "revisar" || descartado;
+  const k = fontPx / 12;
+  ctx.lineWidth = (selected ? 3 : dashed ? 1.5 : 2) * k;
+  ctx.setLineDash(dashed ? [6 * k, 4 * k] : []);
+  ctx.strokeStyle = color;
+  ctx.strokeRect(x, y, w, h);
+  ctx.setLineDash([]);
+  if (selected) {
+    ctx.fillStyle = `${color}22`;
+    ctx.fillRect(x, y, w, h);
+  }
+  if (descartado && !selected) return; // descartado: solo el contorno gris, sin etiqueta
+  const mark = descartado ? "✕ " : f.revision === "aceptado" ? "✓ " : f.level === "revisar" ? "? " : "";
+  const score = f.labelInspector ? "" : ` ${Math.round((b.score ?? 0) * 100)}%`;
+  const tag = `${mark}${f.number} ${displayName(label)}${score}`;
+  ctx.font = `600 ${fontPx}px system-ui, sans-serif`;
+  const th = fontPx * 1.5;
+  const tw = ctx.measureText(tag).width + 8 * k;
+  const ty = y - th < 0 ? y : y - th;
+  const ancho = ctx.canvas.clientWidth || ctx.canvas.width;
+  const tx = Math.max(0, Math.min(x, ancho - tw)); // que la etiqueta no se salga por la derecha
+  ctx.fillStyle = color;
+  ctx.fillRect(tx, ty, tw, th);
+  ctx.fillStyle = f.level === "revisar" && !descartado ? "#111" : "#fff";
+  ctx.fillText(tag, tx + 4 * k, ty + th * 0.72);
+}
+
+/** Imagen con sus marcas en un canvas aparte (para el informe). */
+export function imagenMarcada(
+  image: CanvasImageSource & { width: number; height: number },
+  findings: Marca[],
+  maxSide = 1400,
+): HTMLCanvasElement {
+  const scale = Math.min(1, maxSide / Math.max(image.width, image.height)) || 1;
+  const up = Math.max(1, 700 / Math.max(image.width * scale, image.height * scale)); // placas chicas: agrandar
+  const s = scale * up;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(image.width * s);
+  canvas.height = Math.round(image.height * s);
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+  const font = Math.max(12, Math.round(canvas.width / 55));
+  for (const f of [...findings].reverse()) dibujarMarca(ctx, f, { x: 0, y: 0 }, s, false, font);
+  return canvas;
+}
