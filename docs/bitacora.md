@@ -337,3 +337,22 @@ Dato que deja la obra de ejemplo: la foto de un cordón **sano** igual recibe 2 
 ![Revisión lado a lado](capturas/app-05-lado-a-lado.png)
 
 ![Junta decidida con su historial](capturas/app-06-decidida.png)
+
+## Calibración del rojo y el amarillo (23-nov-2026)
+
+El umbral del modelo decide **qué se muestra** (elegido para no perder defectos). El "umbral alto" decide solo **el color**: rojo cuando el modelo suele acertar, amarillo punteado cuando duda. Hasta ahora era un valor provisorio (0,5); en radiografías coincidía con el umbral del modelo y nunca aparecía el amarillo.
+
+**Cómo se calibró** (`notebooks/calibracion_kaggle.ipynb`, Kaggle sin GPU, ~25 min): con los mismos conjuntos del entrenamiento, se corrieron los **modelos ONNX de la app** con el mismo procesamiento que la web (ventanas, unión de duplicados, sin encimados). Para cada corte posible se midió la precisión de los recuadros (cuántos caen sobre un defecto real, IoU ≥ 0,5) y se eligió el corte más bajo con **al menos 80 % de precisión en validación**. Después se comprobó en prueba.
+
+| | Radiografías | Fotos de cordones |
+|---|---|---|
+| Corte rojo/amarillo | 0,54 | 0,82 |
+| Precisión de los rojos (prueba) | **82,7 %** | **80,4 %** |
+| Precisión de los amarillos (prueba) | 46 % | 25 % |
+| Defectos reales que quedan en rojo (prueba) | 97 % | 37 % |
+
+**Qué significa:**
+- En radiografías el modelo es confiable: casi todo lo que acierta sale en rojo, y el amarillo junta lo dudoso (menos de la mitad son defectos).
+- En fotos el modelo duda mucho más: solo un tercio de los defectos reales llega a rojo, y 3 de cada 4 amarillos son falsas alarmas. Es coherente con lo medido antes (38 % de fotos sanas con falsa alarma). Ahora la foto sana de la obra de ejemplo baja de riesgo "Alto" a "Medio": sus marcas pasan a amarillo.
+
+El CI controla que la app use el corte calibrado y que los rojos acierten al menos 8 de cada 10 en prueba (`docs/metricas/calibracion.json`).

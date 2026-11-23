@@ -1,0 +1,45 @@
+{
+  "fecha": "2026-11-23",
+  "corrida": "Kaggle calibracion-kaggle v1 (CPU, modelos ONNX de la app)",
+  "criterio": "corte más bajo con al menos 80 % de precisión en validación (mínimo 15 recuadros en rojo); acierto = IoU ≥ 0,5 con un defecto real de cualquier tipo",
+  "radiografias": {
+    "umbral_modelo": 0.5,
+    "umbral_alto": 0.5403,
+    "validacion": {
+      "rojos": 1154,
+      "precision_rojos": 0.801,
+      "precision_rojos_mismo_tipo": 0.759,
+      "amarillos": 72,
+      "precision_amarillos": 0.403,
+      "defectos_reales_en_rojo": 0.97
+    },
+    "prueba": {
+      "rojos": 1001,
+      "precision_rojos": 0.827,
+      "precision_rojos_mismo_tipo": 0.789,
+      "amarillos": 50,
+      "precision_amarillos": 0.46,
+      "defectos_reales_en_rojo": 0.973
+    }
+  },
+  "cordones": {
+    "umbral_modelo": 0.15,
+    "umbral_alto": 0.8169,
+    "validacion": {
+      "rojos": 97,
+      "precision_rojos": 0.804,
+      "precision_rojos_mismo_tipo": 0.794,
+      "amarillos": 450,
+      "precision_amarillos": 0.244,
+      "defectos_reales_en_rojo": 0.415
+    },
+    "prueba": {
+      "rojos": 97,
+      "precision_rojos": 0.804,
+      "precision_rojos_mismo_tipo": 0.722,
+      "amarillos": 525,
+      "precision_amarillos": 0.25,
+      "defectos_reales_en_rojo": 0.373
+    }
+  }
+}

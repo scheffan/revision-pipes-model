@@ -72,3 +72,13 @@ def test_portero_distingue_los_tipos_de_imagen():
     # Una radiografía de tórax nunca debería pasar como radiografía de soldadura
     assert m["torax_tomadas_por_radiografia_de_soldadura"] == 0
     assert m["onnx"]["mismos_hallazgos_que_pytorch"] is True
+
+
+@pytest.mark.parametrize("modulo", ["radiografias", "cordones"])
+def test_rojo_calibrado_acierta_al_menos_8_de_cada_10_en_prueba(modulo):
+    cal = json.loads((METRICS_DIR / "calibracion.json").read_text(encoding="utf-8"))[modulo]
+    models = METRICS_DIR.parents[1] / "models"
+    config = json.loads((models / f"modelo_{modulo}.json").read_text(encoding="utf-8"))
+    assert config["umbral_alto"] == cal["umbral_alto"]  # la app usa el corte calibrado
+    assert config["umbral"] <= config["umbral_alto"] <= 1
+    assert cal["prueba"]["precision_rojos"] >= 0.80
