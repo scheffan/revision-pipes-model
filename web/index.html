@@ -61,6 +61,13 @@
         </p>
         <p class="disclaimer">La IA sugiere; no aprueba ni rechaza. Decide el inspector.</p>
         <label class="secondary">Otra imagen <input id="file2" type="file" accept="image/*" hidden /></label>
+        <details class="about">
+          <summary>Acerca de esta demo</summary>
+          <p>Proyecto de portfolio de Esteban Mendez (Data Analyst y QA). Los modelos corren en tu navegador: la imagen no se sube a ningún servidor.</p>
+          <p>Es una demo, no un sistema certificado. En prueba, el modelo de radiografías marcó el 95,6 % de las placas con defecto y el de fotos el 97,7 %; ambos dan falsas alarmas que el inspector debe descartar.</p>
+          <p><strong>Datos de entrenamiento:</strong> radiografías "weld" (kunkun) y "weld data" (Vayun Goel), y fotos "Welding_Defects", en Roboflow Universe, bajo CC BY 4.0; fotos "welding defects detection" (dominio público). Portero: además, Imagenette (Apache 2.0) y "Chest X-Ray Images (Pneumonia)" de Kermany et al. (CC BY 4.0).</p>
+          <p><strong>Modelos base:</strong> RT-DETR R18 (Apache 2.0) y MobileNetV3-Small (BSD), ajustados para este proyecto.</p>
+        </details>
       </aside>
     </main>
     <script type="module" src="/src/main.ts"></script>

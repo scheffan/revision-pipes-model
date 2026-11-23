@@ -301,3 +301,11 @@ Streamlit no permitía la experiencia del mockup (visor oscuro, zoom, paneles), 
 ![El portero avisa: es una foto, no una radiografía](capturas/web-04-portero-avisa.png)
 
 ![Foto de cordón analizada](capturas/web-05-foto-cordon.png)
+
+### Publicación (22-nov-2026)
+
+La app quedó publicada en **https://scheffan.github.io/weld-inspection-ai/** (GitHub Pages). El repo público `scheffan/weld-inspection-ai` tiene solo la app armada, los tres modelos (81 + 81 + 6 MB) y un README con métricas, límites y créditos; el código y el entrenamiento siguen en este repo privado. La página incluye "Acerca de esta demo" con los créditos de los datasets (CC BY 4.0) y de los modelos base.
+
+Verificado en el navegador sobre la versión publicada: baja el portero y el modelo de radiografías con barra de progreso y analiza. Nota: una imagen dibujada a mano que imita una placa (degradé con puntos oscuros) pasó el portero como radiografía; el portero distingue tipos de imagen reales, no detecta montajes.
+
+Para publicar una versión nueva: `web/scripts/publicar.sh <clon de weld-inspection-ai> "mensaje"`.

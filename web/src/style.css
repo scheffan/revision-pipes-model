@@ -111,3 +111,7 @@ button, input, label { font: inherit; color: inherit; }
   .panel { border-left: 0; border-top: 1px solid var(--line); }
   .top { flex-direction: column; align-items: flex-start; }
 }
+
+.about { font-size: 12px; color: var(--muted); line-height: 1.55; border-top: 1px solid var(--line); padding-top: 10px; }
+.about summary { cursor: pointer; color: var(--text); font-size: 13px; }
+.about p { margin: 8px 0 0; }

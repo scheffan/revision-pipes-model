@@ -4,6 +4,8 @@ Herramienta para que un inspector de soldaduras de ductos revise y apruebe radio
 
 > **La IA no aprueba nada: prioriza.** Está calibrada para que casi no se le escapen defectos, aunque eso implique algunas falsas alarmas. La decisión y la firma son siempre del inspector certificado.
 
+**Demo pública:** https://scheffan.github.io/weld-inspection-ai/ (repo `scheffan/weld-inspection-ai`, solo la app armada y los modelos).
+
 ## Estado
 
 | Etapa | Qué incluye | Estado |
